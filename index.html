@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MF Portfolio Files Processor - AI Enabled</title>
+    <!-- Adding Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Link to external CSS file -->
+    <link href="styles.css" rel="stylesheet">
+    <!-- Include configuration -->
+    <script src="config.js"></script>
+    <style>
+        /* Remove any conflicting styles first */
+        #totalValueDisplay,
+        #recordCountDisplay {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #1e40af !important;
+            text-align: center !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif !important;
+        }
+
+        body {
+            background-color: #ffffff !important;
+        }
+
+        .stats-container {
+            margin: 5px auto;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 2px 6px;
+            width: 65%;
+            max-width: 1200px;
+        }
+
+        .file-info-container {
+            margin: 0px auto;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 0px 6px;
+            width: 65%;
+            max-width: 1200px;
+            margin-bottom: -5px;
+        }
+
+        .stats-table,
+        .file-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            table-layout: fixed;
+        }
+
+        .stats-table td {
+            width: 25%;
+            /* Each column takes 25% of the table width */
+        }
+
+        .stats-table tr,
+        .file-info-table tr {
+            border-bottom: 1px solid #eee;
+            height: 20px;
+        }
+
+        .stats-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .file-info-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .stats-label {
+            padding: 2px 6px;
+            color: #333;
+            font-weight: 500;
+            font-size: 12px;
+            white-space: nowrap;
+            width: 40%;
+        }
+
+        .stats-value {
+            padding: 2px 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            color: #1e40af;
+            width: 60%;
+        }
+
+        /* Override any other styles that might affect alignment */
+        #fileNameDisplay,
+        #totalValueDisplay,
+        #recordCountDisplay {
+            text-align: center !important;
+            display: block !important;
+            width: 100% !important;
+        }
+
+        /* Remove all other conflicting styles */
+        #totalValueContainer,
+        #totalValueContainer .file-display-header,
+        #totalValueDisplay,
+        #recordCountDisplay,
+        .value-display-row {
+            /* Reset any previously set styles */
+            all: unset;
+        }
+
+        /* Keep only the console styles */
+        .mf-console-container {
+            margin-top: 10px;
+            position: relative;
+            z-index: 0;
+            margin-bottom: 2px;
+        }
+
+        .console-header {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 1;
+            border-bottom: 1px solid #ddd;
+            padding: 1px 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-header .expand-icon {
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+        }
+
+        .console-header .expand-icon .material-icons {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .console-header .expand-icon:hover .material-icons {
+            color: #333;
+        }
+
+        #logsModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        #logsModal .modal-content {
+            position: relative;
+            background-color: #fff;
+            margin: 2% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 1200px;
+            height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #logsModal .close-modal {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #666;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        #logsModal .close-modal:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        #logsModal .modal-logs-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #fff;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #333;
+            font-size: 12px;
+            margin-bottom: 0;
+        }
+
+        .form-group input {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            height: 28px;
+        }
+
+        .form-group input:focus {
+            border-color: #007BFF;
+            outline: none;
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        #overrideModal .modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        #overrideButton {
+            background-color: #6c757d;
+        }
+
+        #overrideButton:hover {
+            background-color: #5a6268;
+        }
+
+        .file-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: -5px;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .button-row .control-button {
+            height: 36px !important;
+            min-height: 36px !important;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 14px;
+            line-height: 1;
+            box-sizing: border-box;
+            margin: 0;
+            position: relative;
+            top: 0;
+        }
+
+        .button-row .control-button .button-icon {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            margin: 0;
+        }
+
+        .button-row .control-button .material-icons {
+            font-size: 18px;
+            margin-right: 4px;
+            line-height: 1;
+        }
+
+        .button-row .control-button .button-text {
+            margin-left: 4px;
+            line-height: 1;
+        }
+
+        .sheet-name-input {
+            display: flex;
+            gap: 5px;
+        }
+
+        .container {
+            margin-top: 2px;
+        }
+
+        .main-header {
+            text-align: center;
+            margin: 5px 0 5px 0;
+            font-size: 30px;
+            font-weight: 600;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        }
+
+        .sub-header {
+            font-size: 18px;
+            font-weight: 400;
+            margin-top: 2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        }
+
+        /* Add mobile-specific styles */
+        @media (max-width: 768px) {
+            .main-header {
+                font-size: 26px;  /* Reduced from 30px */
+            }
+        }
+
+        /* Add footer styles */
+        .footer {
+            border-top: 1px solid #000;
+            padding: 1px 0 0 0;
+            margin: 20px 0 0 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-size: 12px;
+            text-align: center;
+            background-color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        #downloadButton2:not([disabled]) {
+            background-color: #16a34a !important;
+        }
+
+        .footer span {
+            display: inline-block;
+            margin: 0 8px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #000;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .info-button {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #333;  /* Changed from #666 to #333 */
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .info-button:hover {
+            background-color: #f0f0f0;
+        }
+
+        .info-button .material-icons {
+            font-size: 20px;
+            color: #1e40af;  /* Added blue color for the book icon */
+        }
+
+        .legend-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background-color: #fff;
+        }
+
+        .legend-table th,
+        .legend-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .legend-table th {
+            font-weight: 600;
+            color: #333;
+            background-color: #fff;
+        }
+
+        .legend-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        @media (max-width: 768px) {
+            .info-button .button-text {
+                display: none;
+            }
+            .info-button {
+                padding: 8px;
+            }
+            .legend-table {
+                font-size: 12px;
+            }
+            .legend-table td, .legend-table th {
+                padding: 6px;
+            }
+        }
+
+        #legendModal .close-modal {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+
+        #legendModal .close-modal .material-icons {
+            font-size: 24px;
+        }
+
+        #legendModal .close-modal:hover {
+            color: #333;
+        }
+
+        #legendModal .modal-content {
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Add this section right after the <body> tag and before the existing h1 -->
+    <h1 class="main-header">
+        MF Portfolio Files Processor
+        <div class="sub-header">AI Enabled + Manual Override</div>
+    </h1>
+    <div class="controls-container">
+        <div class="file-controls">
+            <div class="input-row">
+                <label for="mfFileInput" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">upload_file</span>
+                    </span>
+                    <span class="button-text">Upload</span>
+                </label>
+                <input type="file" id="mfFileInput" accept=".xlsx, .xls" />
+                <div class="sheet-name-input">
+                    <input type="text" id="sheetNameInput" placeholder="Sheet Name" style="
+                            padding: 8px 12px;
+                            border: 1px solid #007BFF;
+                            border-radius: 5px;
+                            font-size: 14px;
+                            width: 150px;
+                            outline: none;
+                        " />
+                    <input type="text" id="schemeNameInput" placeholder="Scheme Name" maxlength="30" style="
+                            padding: 8px 12px;
+                            border: 1px solid #007BFF;
+                            border-radius: 5px;
+                            font-size: 14px;
+                            width: 200px;
+                            outline: none;
+                            margin-left: 5px;
+                            text-transform: uppercase;
+                        " />
+                    <input type="date" id="monthEndInput" style="
+                            padding: 8px 12px;
+                            border: 1px solid #007BFF;
+                            border-radius: 5px;
+                            font-size: 14px;
+                            width: 150px;
+                            outline: none;
+                            margin-left: 5px;
+                        " />
+                </div>
+            </div>
+            <div class="file-info-container">
+                <table class="file-info-table">
+                    <tr>
+                        <td class="stats-label">Name of File</td>
+                        <td class="stats-value" id="fileNameDisplay">No file selected</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="button-row" style="margin-top: 10px; display: flex; gap: 10px;">
+                <button id="mfProcessButton" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">play_circle</span>
+                    </span>
+                    <span class="button-text">Process - AI</span>
+                </button>
+                <button id="overrideButton" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">settings</span>
+                    </span>
+                    <span class="button-text">Manual Override</span>
+                </button>
+                <button id="downloadButton2" class="control-button" disabled>
+                    <span class="button-icon">
+                        <span class="material-icons">download</span>
+                    </span>
+                    <span class="button-text">Download</span>
+                </button>
+                <button id="appendButton" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">merge_type</span>
+                    </span>
+                    <span class="button-text">Append</span>
+                </button>
+                <button id="legendButton" class="info-button" title="Show Legend">
+                    <span class="button-icon">
+                        <span class="material-icons">menu_book</span>
+                    </span>
+                    <span class="button-text">Legend</span>
+                </button>
+            </div>
+        </div>
+        <div class="stats-container">
+            <table class="stats-table">
+                <tr>
+                    <td class="stats-label">T-NAV / txt file</td>
+                    <td class="stats-value" id="totalValueDisplay">Waiting ...</td>
+                    <td class="stats-label" id="schemaModelLabel">Schema /</td>
+                    <td class="stats-value" id="schemaAnalysisDisplay">Waiting...</td>
+                </tr>
+                <tr>
+                    <td class="stats-label">Num of records / txt file</td>
+                    <td class="stats-value" id="recordCountDisplay">Waiting ...</td>
+                    <td class="stats-label" id="geminiSchemaLabel">Schema /</td>
+                    <td class="stats-value" id="geminiSchemaDisplay">Waiting...</td>
+                </tr>
+                <tr>
+                    <td class="stats-label" id="geminiModelLabel">T-NAV /</td>
+                    <td class="stats-value" id="geminiTotalValueDisplay">Waiting ...</td>
+                    <td class="stats-label">Cash/ Derivatives / Diff Amt</td>
+                    <td class="stats-value" id="diffAmtDisplay">Waiting...</td>
+                </tr>
+                <tr>
+                    <td class="stats-label" id="openaiModelLabel">T-NAV /</td>
+                    <td class="stats-value" id="openAITotalValueDisplay">Waiting ...</td>
+                    <td class="stats-label">TBD 1</td>
+                    <td class="stats-value" id="performanceScoreDisplay"></td>
+                </tr>
+                <tr>
+                    <td class="stats-label">Total Quantity/ txt file</td>
+                    <td class="stats-value" id="totalQuantityDisplay">Waiting...</td>
+                    <td class="stats-label">TBD 2</td>
+                    <td class="stats-value" id="investmentStyleDisplay"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="mf-console-container">
+            <div class="console-header">
+                <span>Processing Logs</span>
+                <span id="expandLogsBtn" class="expand-icon" title="Expand logs">
+                    <span class="material-icons">open_in_full</span>
+                </span>
+            </div>
+            <div id="mfConsoleOutput"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="analysis-container">
+            <div class="tabs-container">
+                <div class="tabs">
+                    <div class="tab-buttons">
+                        <button class="tab-button active" data-tab="data">Data Table</button>
+                    </div>
+                    <span id="expandTableBtn" class="expand-icon" title="Expand table">
+                        <span class="material-icons">open_in_full</span>
+                    </span>
+                </div>
+                <div class="tab-content">
+                    <div id="data" class="tab-pane active">
+                        <div class="data-table-container">
+                            <pre id="outputContainer"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="tableModal">
+        <div class="modal-content">
+            <button class="close-modal">
+                <span class="material-icons">close</span>
+                Close
+            </button>
+            <div class="modal-table-container">
+                <!-- The expanded table will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="overrideModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; padding: 20px 20px 10px 20px;">
+            <h3 style="margin-top: 0;">Manual Schema Override</h3>
+            <p style="margin: 5px 0 10px 0; font-size: 12px; color: #666;">Use this override when AI processing fails to correctly identify the data start row or column references. Enter the values manually below to process the file.</p>
+            <form id="overrideForm" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 0;">
+                <div class="form-group">
+                    <label for="dataStartRow">Data Start Row</label>
+                    <input type="number" id="dataStartRow" min="1" placeholder="Enter row number (e.g. 5)" required>
+                </div>
+                <div class="form-group">
+                    <label for="isinColumn">ISIN</label>
+                    <input type="text" id="isinColumn" pattern="[A-Za-z]" maxlength="1" placeholder="Enter column letter (A-Z)" required>
+                </div>
+                <div class="form-group">
+                    <label for="instrumentNameColumn">Instrument Name</label>
+                    <input type="text" id="instrumentNameColumn" pattern="[A-Za-z]" maxlength="1" placeholder="Enter column letter (A, B, C, etc.)" required>
+                </div>
+                <div class="form-group">
+                    <label for="marketValueColumn">Market Value</label>
+                    <input type="text" id="marketValueColumn" pattern="[A-Za-z]" maxlength="1" placeholder="Enter column letter (A, B, C, etc.)" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="quantityColumn">Quantity</label>
+                    <input type="text" id="quantityColumn" pattern="[A-Za-z]" maxlength="1" placeholder="Enter column letter (A, B, C, etc.)" required>
+                </div>
+                <div class="form-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 5px;">
+                    <button type="button" id="cancelOverride" class="control-button">Cancel</button>
+                    <button type="submit" class="control-button">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add the logs modal -->
+    <div id="logsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal">
+                <span class="material-icons">close</span>
+                Close
+            </button>
+            <div class="modal-logs-container">
+                <!-- The expanded logs will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Legend Modal -->
+    <div id="legendModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <button class="close-modal">
+                <span class="material-icons">close</span>
+            </button>
+            <h3 style="margin-top: 0;">Legend & Explanations</h3>
+            <div class="legend-note" style="margin-bottom: 15px; padding: 8px; background-color: #fff; border-radius: 4px; font-size: 13px;">
+                <span class="material-icons" style="color: #e65100; font-size: 16px; vertical-align: middle;">warning</span>
+                Any cell turning orange with an icon indicates a validation issue that needs further review.
+            </div>
+            <table class="legend-table">
+                <tr>
+                    <th style="width: 30%;">Field</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>T-NAV / txt file</td>
+                    <td>Total market value / NAV from the created text file.</td>
+                </tr>
+                <tr>
+                    <td>Num of records / txt file</td>
+                    <td>Number of records from the created text file, used for validation against the ISIN count from the Excel file.</td>
+                </tr>
+                <tr>
+                    <td>T-NAV /gpt-4o-mini</td>
+                    <td>Total market value/NAV from the input Excel file as identified by OpenAI model. Used for calculating Cash/Derivatives difference amount. Orange color indicates variance from Gemini value requiring review.</td>
+                </tr>
+                <tr>
+                    <td>T-NAV /gemini-2.0-flash-exp</td>
+                    <td>Total market value/NAV from the input Excel file as identified by Google Gemini model. Orange color indicates variance from OpenAI value requiring review.</td>
+                </tr>
+                <tr>
+                    <td>Total Quantity/ txt file</td>
+                    <td>Total quantity from the text file for validation purposes.</td>
+                </tr>
+                <tr>
+                    <td>Schema /gpt-4o</td>
+                    <td>Schema from OpenAI in format (e.g., 8-C-B-G-F): Row number followed by column letters for ISIN, Instrument Name, Market Value, and Quantity respectively.</td>
+                </tr>
+                <tr>
+                    <td>Schema /gemini-2.0-flash-exp</td>
+                    <td>Schema from Google Gemini in same format as above. Orange color indicates mismatch with OpenAI schema.</td>
+                </tr>
+                <tr>
+                    <td>Cash/ Derivatives / Diff Amt</td>
+                    <td>Balancing amount for non-ISIN items (cash, derivatives, TRIPS). Calculated as difference between Excel T-NAV (OpenAI) and text file T-NAV. Added as last line with ISIN IN9999999999.</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script>
+        function isMobileDevice() {
+            return (
+                // Screen size checks
+                (window.innerWidth <= 768 || window.screen.width <= 768) ||
+                
+                // User Agent checks
+                /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                
+                // Platform check
+                /iPhone|iPod|Android/.test(navigator.platform) ||
+                
+                // Screen orientation capability
+                ('orientation' in window)
+            );
+        }
+
+        // Function to apply mobile styles
+        function applyMobileStyles() {
+            const buttons = document.querySelectorAll('.control-button');
+            const buttonTexts = document.querySelectorAll('.button-text');
+            const sheetNameInput = document.getElementById('sheetNameInput');
+            const schemeNameInput = document.getElementById('schemeNameInput');
+            const monthEndInput = document.getElementById('monthEndInput');
+            const fileControls = document.querySelector('.file-controls');
+            const statsContainer = document.querySelector('.stats-container');
+            const statsTable = document.querySelector('.stats-table');
+            
+            if (isMobileDevice()) {
+                // Button styles
+                buttons.forEach(button => {
+                    button.style.padding = '8px';
+                });
+                buttonTexts.forEach(text => {
+                    text.style.display = 'none';
+                });
+
+                // Input field styles for mobile
+                if (sheetNameInput) {
+                    sheetNameInput.style.width = '80px';
+                }
+                if (schemeNameInput) {
+                    schemeNameInput.style.width = '100px';
+                }
+                if (monthEndInput) {
+                    monthEndInput.style.width = '100px';
+                }
+                if (fileControls) {
+                    fileControls.style.flexWrap = 'wrap';
+                    fileControls.style.gap = '8px';
+                    fileControls.style.justifyContent = 'flex-start';
+                }
+
+                // Stats table styles for mobile
+                if (statsContainer) {
+                    statsContainer.style.width = '90%';
+                    statsContainer.style.padding = '2px 0';
+                    statsContainer.style.overflowX = 'auto';
+                    statsContainer.style.webkitOverflowScrolling = 'touch';
+                }
+                if (statsTable) {
+                    statsTable.style.minWidth = '600px';
+                    const cells = statsTable.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        cell.style.whiteSpace = 'nowrap';
+                        cell.style.padding = '2px 6px';
+                    });
+                }
+            } else {
+                // Reset styles for desktop
+                buttons.forEach(button => {
+                    button.style.padding = '';
+                });
+                buttonTexts.forEach(text => {
+                    text.style.display = 'inline';
+                });
+
+                // Reset input field styles
+                if (sheetNameInput) {
+                    sheetNameInput.style.width = '';
+                }
+                if (schemeNameInput) {
+                    schemeNameInput.style.width = '';
+                }
+                if (monthEndInput) {
+                    monthEndInput.style.width = '';
+                }
+                if (fileControls) {
+                    fileControls.style.flexWrap = '';
+                    fileControls.style.gap = '';
+                    fileControls.style.justifyContent = '';
+                }
+
+                // Reset stats table styles
+                if (statsContainer) {
+                    statsContainer.style.width = '';
+                    statsContainer.style.padding = '';
+                    statsContainer.style.overflowX = '';
+                    statsContainer.style.webkitOverflowScrolling = '';
+                }
+                if (statsTable) {
+                    statsTable.style.minWidth = '';
+                    const cells = statsTable.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        cell.style.whiteSpace = '';
+                        cell.style.padding = '';
+                    });
+                }
+            }
+        }
+
+        // Apply mobile styles on load and resize
+        window.addEventListener('load', applyMobileStyles);
+        window.addEventListener('resize', applyMobileStyles);
+
+        const jsPDF = window.jspdf.jsPDF;
+
+        // Set model names in labels
+        document.getElementById('geminiModelLabel').textContent = `T-NAV /${CONFIG.GEMINI_MODEL_MARKET_VALUE}`;
+        document.getElementById('openaiModelLabel').textContent = `T-NAV /${CONFIG.OPENAI_MODEL_MARKET_VALUE}`;
+        document.getElementById('schemaModelLabel').textContent = `Schema /${CONFIG.OPENAI_MODEL_STRUCTURE}`;
+        document.getElementById('geminiSchemaLabel').textContent = `Schema /${CONFIG.GEMINI_MODEL_STRUCTURE}`;
+
+        // Function to log messages to the console
+        function logToConsole(message, isError = false) {
+            const consoleOutput = document.getElementById('mfConsoleOutput');
+            const logEntry = document.createElement('div');
+            logEntry.style.color = isError ? '#dc3545' : '#333';
+            logEntry.style.marginBottom = '5px';
+            logEntry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        // File input handler for mutual fund processing
+        document.getElementById('mfFileInput').addEventListener('change', function () {
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const totalValueDisplay = document.getElementById('totalValueDisplay');
+            const recordCountDisplay = document.getElementById('recordCountDisplay');
+            const totalQuantityDisplay = document.getElementById('totalQuantityDisplay');
+
+            // Reset override form
+            document.getElementById('overrideForm').reset();
+            document.getElementById('overrideModal').style.display = 'none';
+
+            if (this.files && this.files[0]) {
+                const fileName = this.files[0].name;
+                console.log("File selected:", fileName);
+                fileNameDisplay.textContent = fileName;
+                totalValueDisplay.textContent = 'Waiting ...';
+                recordCountDisplay.textContent = 'Waiting ...';
+                totalQuantityDisplay.textContent = 'Waiting ...';
+            } else {
+                fileNameDisplay.textContent = 'No file selected';
+                totalValueDisplay.textContent = 'Waiting ...';
+                recordCountDisplay.textContent = 'Waiting ...';
+                totalQuantityDisplay.textContent = 'Waiting ...';
+            }
+        });
+
+        // Process button handler for mutual fund processing
+        document.getElementById('mfProcessButton').addEventListener('click', async function () {
+            const fileInput = document.getElementById('mfFileInput');
+            const sheetNameInput = document.getElementById('sheetNameInput');
+            const schemeNameInput = document.getElementById('schemeNameInput');
+            const monthEndInput = document.getElementById('monthEndInput');
+            const sheetName = sheetNameInput.value.trim();
+
+            if (!fileInput.files[0]) {
+                alert("Please select a file first!");
+                return;
+            }
+
+            if (!sheetName) {
+                alert("Please enter a sheet name!");
+                return;
+            }
+
+            if (!schemeNameInput.value.trim()) {
+                alert("Please enter the scheme name!");
+                return;
+            }
+
+            if (!monthEndInput.value) {
+                alert("Please select the month end date!");
+                return;
+            }
+
+            try {
+                // Clear previous console output
+                document.getElementById('mfConsoleOutput').innerHTML = '';
+
+                // Disable the process button while processing
+                this.disabled = true;
+                this.innerHTML = `
+                    <span class="button-icon">
+                        <span class="material-icons">hourglass_empty</span>
+                    </span>
+                    <span class="button-text">Processing...</span>
+                `;
+
+                const analysis = await analyzeMutualFundFile(fileInput.files[0], sheetName);
+
+                // Activate the Data Table tab
+                const dataTabButton = document.querySelector('[data-tab="data"]');
+                if (dataTabButton) {
+                    const tabPanes = document.querySelectorAll('.tab-pane');
+                    const tabButtons = document.querySelectorAll('.tab-button');
+
+                    // Remove active class from all buttons and panes
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabPanes.forEach(pane => pane.classList.remove('active'));
+
+                    // Add active class to data tab button and pane
+                    dataTabButton.classList.add('active');
+                    const dataPane = document.getElementById('data');
+                    if (dataPane) {
+                        dataPane.classList.add('active');
+                    }
+                }
+
+            } catch (error) {
+                logToConsole(`Processing failed: ${error.message}`, true);
+                alert('Processing failed. Please check the console for details.');
+            } finally {
+                // Re-enable the process button
+                this.disabled = false;
+                this.innerHTML = `
+                    <span class="button-icon">
+                        <span class="material-icons">play_circle</span>
+                    </span>
+                    <span class="button-text">Process</span>
+                `;
+            }
+        });
+
+        async function analyzeMutualFundFile(file, sheetName) {
+            try {
+                logToConsole('Reading Excel file...');
+                const initialRows = await extractInitialRows(file, sheetName);
+
+                logToConsole('Analyzing file structure with AI...');
+                const analysis = await analyzeWithAI(initialRows, file, sheetName);
+
+                logToConsole('Analysis complete!');
+                logToConsole(JSON.stringify(analysis, null, 2));
+
+                // Process the full file with the analysis results
+                await processFullFile(file, sheetName, analysis);
+
+                return analysis;
+            } catch (error) {
+                logToConsole(`Error: ${error.message}`, true);
+                throw error;
+            }
+        }
+
+        async function processFullFile(file, sheetName, analysis) {
+            return new Promise((resolve, reject) => {
+                try {
+                    logToConsole('Processing full file...');
+                    const reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+
+                            // Convert input sheet name to lowercase
+                            const inputSheetNameLower = sheetName.toLowerCase();
+
+                            // Find the sheet name in a case-insensitive way
+                            const actualSheetName = Object.keys(workbook.Sheets).find(
+                                name => name.toLowerCase() === inputSheetNameLower
+                            );
+
+                            if (!actualSheetName) {
+                                throw new Error(`Sheet "${sheetName}" not found in workbook`);
+                            }
+
+                            const sheet = workbook.Sheets[actualSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                            // Get column indices (convert A,B,C to 0,1,2)
+                            const columnIndices = {
+                                isin: analysis.columns.isin.charCodeAt(0) - 65,
+                                instrumentName: analysis.columns.instrumentName.charCodeAt(0) - 65,
+                                marketValue: analysis.columns.marketValue.charCodeAt(0) - 65,
+                                quantity: analysis.columns.quantity.charCodeAt(0) - 65
+                            };
+
+                            logToConsole('Using column indices:', JSON.stringify(columnIndices));
+                            logToConsole('Starting from row:', analysis.dataStartRow);
+
+                            // Create headers for the pipe-delimited file
+                            let outputRows = ['Scheme Name|Month End|ISIN|Instrument Name|Market Value|Quantity'];
+                            let totalMarketValue = 0;
+                            let totalQuantity = 0;
+                            let validRecordCount = 0;
+
+                            // Get scheme name and month end date
+                            const schemeName = document.getElementById('schemeNameInput').value.toUpperCase();
+                            const monthEndDate = document.getElementById('monthEndInput').value;
+                            const formattedDate = monthEndDate ? new Date(monthEndDate).toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            }).replace(/\//g, '-') : '';
+
+                            // Process rows starting from dataStartRow
+                            const startRow = analysis.dataStartRow - 1; // Convert to 0-based index
+                            const endRow = jsonData.length; // Process all rows
+
+                            logToConsole(`Processing rows from ${startRow} to ${endRow}`);
+
+                            for (let i = startRow; i < endRow; i++) {
+                                const row = jsonData[i];
+                                if (!row) {
+                                    logToConsole(`Skipping empty row at index ${i}`);
+                                    continue;
+                                }
+
+                                // Check if ISIN is populated and starts with 'IN'
+                                const isin = row[columnIndices.isin];
+                                logToConsole(`Row ${i} - ISIN: ${isin}, Column Index: ${columnIndices.isin}`);
+
+                                if (isin && typeof isin === 'string' && isin.startsWith('IN')) {
+                                    validRecordCount++;
+                                    const marketValue = row[columnIndices.marketValue] || 0;
+                                    const quantity = row[columnIndices.quantity] || 0;
+
+                                    logToConsole(`Found valid row ${i} - ISIN: ${isin}, Market Value: ${marketValue}, Quantity: ${quantity}`);
+
+                                    // Convert market value to number
+                                    const marketValueNum = typeof marketValue === 'string' ?
+                                        parseFloat(marketValue.replace(/[^\d.-]/g, '')) :
+                                        (typeof marketValue === 'number' ? marketValue : 0);
+
+                                    // Convert quantity to number
+                                    const quantityNum = typeof quantity === 'string' ?
+                                        parseFloat(quantity.replace(/[^\d.-]/g, '')) :
+                                        (typeof quantity === 'number' ? quantity : 0);
+
+                                    if (!isNaN(marketValueNum)) {
+                                        totalMarketValue += marketValueNum;
+                                    }
+
+                                    if (!isNaN(quantityNum)) {
+                                        totalQuantity += quantityNum;
+                                    }
+
+                                    const outputRow = [
+                                        schemeName,
+                                        formattedDate,
+                                        isin,
+                                        row[columnIndices.instrumentName] || '',
+                                        marketValue || '',
+                                        quantity || ''
+                                    ].join('|');
+                                    outputRows.push(outputRow);
+                                }
+                            }
+
+                            logToConsole(`Found ${validRecordCount} valid records`);
+                            logToConsole(`Total Market Value: ${totalMarketValue}`);
+
+                            // Create the file content
+                            const fileContent = outputRows.join('\n');
+
+                            // Update displays
+                            const totalValueDisplay = document.getElementById('totalValueDisplay');
+                            const formattedTotal = totalMarketValue.toLocaleString('en-IN', {
+                                maximumFractionDigits: 2,
+                                minimumFractionDigits: 2
+                            });
+                            totalValueDisplay.textContent = formattedTotal;
+
+                            const recordCountDisplay = document.getElementById('recordCountDisplay');
+                            recordCountDisplay.textContent = validRecordCount.toLocaleString('en-IN');
+
+                            const totalQuantityDisplay = document.getElementById('totalQuantityDisplay');
+                            if (totalQuantityDisplay) {
+                                totalQuantityDisplay.textContent = totalQuantity.toLocaleString('en-IN');
+                            }
+
+                            // Calculate difference with OpenAI value
+                            const openAIValueDisplay = document.getElementById('openAITotalValueDisplay');
+                            if (openAIValueDisplay) {
+                                const openAIText = openAIValueDisplay.textContent.replace('₹', '').trim();
+                                const openAIValue = parseFloat(openAIText.replace(/,/g, ''));
+
+                                if (!isNaN(openAIValue)) {
+                                    const difference = openAIValue - totalMarketValue;
+                                    const formattedDiff = difference.toLocaleString('en-IN', {
+                                        maximumFractionDigits: 2,
+                                        minimumFractionDigits: 2
+                                    });
+                                    const diffAmtDisplay = document.getElementById('diffAmtDisplay');
+                                    if (diffAmtDisplay) {
+                                        diffAmtDisplay.textContent = formattedDiff;
+                                        logToConsole(`Calculated difference: ${openAIValue} - ${totalMarketValue} = ${difference}`);
+
+                                        // Create modified version of the file with the difference
+                                        const modifiedRows = [...outputRows];
+                                        const diffRow = [
+                                            schemeName,
+                                            formattedDate,
+                                            'IN9999999999',
+                                            '',
+                                            difference,
+                                            ''
+                                        ].join('|');
+                                        modifiedRows.push(diffRow);
+                                        const modifiedContent = modifiedRows.join('\n');
+
+                                        // Create modified file download button
+                                        const modFileName = `${file.name.replace(/\.[^/.]+$/, '')}_${actualSheetName}_mod.txt`;
+                                        createModifiedDownloadButton(modFileName, modifiedContent);
+                                    }
+                                }
+                            }
+
+                            // Create download button
+                            const fileName = `${file.name.replace(/\.[^/.]+$/, '')}_${actualSheetName}.txt`;
+                            createDownloadButton(fileName, fileContent);
+
+                            // Display data in the table
+                            displayInTable(outputRows);
+
+                            resolve();
+                        } catch (error) {
+                            logToConsole(`Error processing file: ${error.message}`, true);
+                            reject(error);
+                        }
+                    };
+
+                    reader.onerror = function () {
+                        const error = new Error('Error reading file');
+                        logToConsole(error.message, true);
+                        reject(error);
+                    };
+
+                    reader.readAsArrayBuffer(file);
+                } catch (error) {
+                    logToConsole(`Error processing file: ${error.message}`, true);
+                    reject(error);
+                }
+            });
+        }
+
+        function extractInitialRows(file, sheetName, numRows = 15) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+
+                        // Convert input sheet name to lowercase
+                        const inputSheetNameLower = sheetName.toLowerCase();
+
+                        // Find the sheet name in a case-insensitive way
+                        const actualSheetName = Object.keys(workbook.Sheets).find(
+                            name => name.toLowerCase() === inputSheetNameLower
+                        );
+
+                        if (!actualSheetName) {
+                            throw new Error(`Sheet "${sheetName}" not found in workbook`);
+                        }
+
+                        const sheet = workbook.Sheets[actualSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        const initialRows = jsonData.slice(0, numRows);
+
+                        resolve(initialRows);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+
+                reader.onerror = function () {
+                    reject(new Error('Error reading file'));
+                };
+
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function analyzeWithGemini(prompt) {
+            try {
+                const promptWithFormat = `${prompt}
+
+                Please analyze and respond with ONLY a JSON object in this exact format:
+                {
+                    "dataStartRow": number,
+                    "columns": {
+                        "isin": string,
+                        "instrumentName": string,
+                        "marketValue": string,
+                        "quantity": string
+                    }
+                }
+
+                Do not include any additional text, markdown formatting, or explanations.`;
+
+                const response = await fetch(`${CONFIG.RT_ENDPOINT}/gemini-chat-completion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: CONFIG.GEMINI_MODEL_STRUCTURE,
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [
+                                    {
+                                        text: promptWithFormat
+                                    }
+                                ]
+                            }
+                        ],
+                        generationConfig: {
+                            temperature: 0,
+                            responseMimeType: "application/json"
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logToConsole(`Gemini API Error Response: ${errorText}`, true);
+                    throw new Error(`Gemini API call failed: ${response.statusText}. Details: ${errorText}`);
+                }
+
+                const result = await response.json();
+                if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+                    logToConsole(`Invalid Gemini API Response Structure: ${JSON.stringify(result)}`, true);
+                    throw new Error('Invalid Gemini API response format');
+                }
+
+                const content = result.candidates[0].content.parts[0].text;
+                logToConsole('Gemini Response:', content);
+
+                // Parse and display the Gemini structure response
+                try {
+                    const parsedGeminiContent = JSON.parse(content);
+                    const geminiSchemaDisplay = document.getElementById('geminiSchemaDisplay');
+                    if (geminiSchemaDisplay) {
+                        const rowNum = parsedGeminiContent.dataStartRow;
+                        const cols = parsedGeminiContent.columns;
+                        const displayValue = `${rowNum}-${cols.isin}-${cols.instrumentName}-${cols.marketValue}-${cols.quantity}`;
+                        geminiSchemaDisplay.textContent = displayValue;
+                        
+                        // Compare schemas after both are populated
+                        const openaiDisplay = document.getElementById('schemaAnalysisDisplay');
+                        if (openaiDisplay && openaiDisplay.textContent !== 'Waiting...') {
+                            compareAndHighlightSchemas(openaiDisplay.textContent, displayValue);
+                        }
+                    }
+                } catch (e) {
+                    logToConsole(`Failed to parse Gemini content: ${content}`, true);
+                }
+
+                return content;
+            } catch (error) {
+                logToConsole(`Gemini API Error: ${error.message}`, true);
+                throw error;
+            }
+        }
+
+        async function analyzeWithAI(initialRows, file, sheetName) {
+            try {
+                // Read the complete file for total value analysis
+                logToConsole('Reading complete file data...');
+                const completeData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+
+                            // Convert input sheet name to lowercase
+                            const inputSheetNameLower = sheetName.toLowerCase();
+
+                            // Find the sheet name in a case-insensitive way
+                            const actualSheetName = Object.keys(workbook.Sheets).find(
+                                name => name.toLowerCase() === inputSheetNameLower
+                            );
+
+                            if (!actualSheetName) {
+                                throw new Error(`Sheet "${sheetName}" not found in workbook`);
+                            }
+
+                            const sheet = workbook.Sheets[actualSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                            logToConsole(`Complete data rows: ${jsonData.length}`);
+
+                            if (jsonData.length === 0) {
+                                throw new Error('No data found in sheet');
+                            }
+
+                            resolve(jsonData);
+                        } catch (error) {
+                            logToConsole(`Error reading complete data: ${error.message}`, true);
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = (error) => {
+                        logToConsole(`Error reading file: ${error}`, true);
+                        reject(new Error('Error reading file'));
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+
+                // Prepare prompts
+                const prompt = `
+                I'm analyzing a mutual fund portfolio allocation disclosure file from India. 
+                This is a monthly portfolio disclosure file that mutual funds in India must publish.
+                
+                I need to identify:
+                1. The row number where actual data starts (excluding headers). So when I import the data that row would be the first row to be imported. The first data row would always be the first row where the ISIN number and the instrument / security name / stock name  is non-empty. ISIN is the unique identifier for a insturment/ security / stock and always starts with 'IN"'.The first data row is the first row where both the ISIN column contains a value starting with 'IN' and the Instrument Name column is non-empty
+                2. The column indices (using letters A, B, C, etc.) for:
+                   - ISIN (could be labeled as "ISIN", "ISIN number", etc.)
+                   - Instrument Name (could be "Name of company", "Name of instrument", "Instrument", etc.)
+                   - Market Value (could be "Market value", "Fair value", "NAV", "FV", etc.)
+                   - Quantity (could be labeled as "Quantity", "Qty", "Nos", "#", "Units", "No. of Units", etc.)
+                
+                This information will be used to extract these specific columns and convert them into a pipe-delimited format.
+                Please provide the column letters (A, B, C, etc.) where these fields are located.
+                
+                Here are the first ${initialRows.length} rows of the file:
+                ${JSON.stringify(initialRows, null, 2)}
+                
+                Please analyze and respond with ONLY a JSON object in this format:
+                {
+                    "dataStartRow": number,
+                    "columns": {
+                        "isin": "column letter (A, B, C, etc.)",
+                        "instrumentName": "column letter (A, B, C, etc.)",
+                        "marketValue": "column letter (A, B, C, etc.)"
+                    }
+                }`;
+
+                logToConsole(`Preparing total value analysis for ${completeData.length} rows...`);
+                const totalValuePrompt = `
+                I'm analyzing a mutual fund portfolio disclosure file from India. This file contains market values or NAV (Net Asset Value) for various holdings.
+                
+                I need to find the TOTAL market value or NAV. This total might be labeled as:
+                - Grand Total
+                - Grand Total Market Value
+                - Net Assets
+                - Net Asset Value
+                - Total NAV
+                
+                Important Context:
+                1. This total is typically found in the same column as other market values/NAV values (column G)
+                2. It's usually towards the end of the data, but might be followed by additional schedules
+                3. The total row might contain other metrics, but we only want the market value/NAV total
+                4. The value should be in the same column as other market values
+                
+                Here is the complete file data (${completeData.length} rows):
+                ${JSON.stringify(completeData, null, 2)}
+                
+                Please analyze and respond with ONLY a JSON object containing the total value:
+                {
+                    "totalValue": number
+                }`;
+
+                logToConsole('Making API calls...');
+
+                // Make API calls with better error handling
+                const apiCalls = [
+                    // OpenAI API call for structure
+                    (async () => {
+                        const requestBody = {
+                            model: CONFIG.OPENAI_MODEL_STRUCTURE,
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: "You are a helpful assistant that analyzes Excel file structures. You identify column positions using letters (A, B, C, etc.) and respond only with JSON."
+                                },
+                                {
+                                    role: "user",
+                                    content: prompt
+                                }
+                            ],
+                            response_format: { "type": "json_object" },
+                            temperature: 0
+                        };
+                        logToConsole('\n=== OpenAI Structure Analysis Request ===');
+                        logToConsole('URL:', `${CONFIG.RT_ENDPOINT}/open-chat-completion`);
+                        logToConsole('Request Body:');
+                        logToConsole(JSON.stringify(requestBody, null, 2));
+
+                        try {
+                            const response = await fetch(`${CONFIG.RT_ENDPOINT}/open-chat-completion`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify(requestBody)
+                            }).catch(error => {
+                                logToConsole(`Network error during fetch: ${error.message}`, true);
+                                throw new Error(`Network error: ${error.message}`);
+                            });
+
+                            logToConsole('Response Details:', {
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: Object.fromEntries(response.headers.entries()),
+                                url: response.url
+                            });
+
+                            if (!response.ok) {
+                                const errorText = await response.text();
+                                logToConsole('Error Response Body:', errorText);
+                                throw new Error(`OpenAI API call failed: ${response.statusText}. Details: ${errorText}`);
+                            }
+                            return response;
+                        } catch (error) {
+                            logToConsole(`OpenAI Structure API Error: ${error.message}`, true);
+                            throw error;
+                        }
+                    })(),
+
+                    // Gemini API call for structure
+                    analyzeWithGemini(prompt).catch(error => {
+                        logToConsole(`Gemini API call failed: ${error.message}`, true);
+                        logToConsole('Full Gemini error:', error);
+                        throw error;
+                    }),
+
+                    // OpenAI API call for total value
+                    (async () => {
+                        const requestBody = {
+                            model: CONFIG.OPENAI_MODEL_MARKET_VALUE,
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: "You are a helpful assistant that analyzes mutual fund data. You identify total market values and respond only with JSON containing a single number."
+                                },
+                                {
+                                    role: "user",
+                                    content: totalValuePrompt
+                                }
+                            ],
+                            response_format: { "type": "json_object" },
+                            temperature: 0
+                        };
+                        logToConsole('\n=== Total Value Analysis Request ===');
+                        logToConsole('URL:', `${CONFIG.RT_ENDPOINT}/open-chat-completion`);
+                        logToConsole('Request Body:');
+                        logToConsole(JSON.stringify(requestBody, null, 2));
+
+                        try {
+                            logToConsole('Sending total value request...');
+                            const response = await fetch(`${CONFIG.RT_ENDPOINT}/open-chat-completion`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify(requestBody)
+                            }).catch(error => {
+                                logToConsole(`Network error during fetch: ${error.message}`, true);
+                                throw new Error(`Network error: ${error.message}`);
+                            });
+
+                            logToConsole('Total Value Response Details:');
+                            logToConsole(JSON.stringify({
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: Object.fromEntries(response.headers.entries()),
+                                url: response.url
+                            }, null, 2));
+
+                            // Read the response text once
+                            const responseText = await response.text().catch(error => {
+                                logToConsole(`Error reading response text: ${error.message}`, true);
+                                throw error;
+                            });
+                            logToConsole('Total Value Raw Response Text:', responseText);
+
+                            if (!response.ok) {
+                                throw new Error(`Total Value API call failed: ${response.statusText}. Details: ${responseText}`);
+                            }
+
+                            // Parse the stored response text
+                            try {
+                                const responseJson = JSON.parse(responseText);
+                                logToConsole('Total Value Parsed Response:', JSON.stringify(responseJson, null, 2));
+                                // Create a new response with the parsed data
+                                return new Response(responseText, {
+                                    status: response.status,
+                                    statusText: response.statusText,
+                                    headers: response.headers
+                                });
+                            } catch (e) {
+                                logToConsole('Error parsing total value response as JSON:', e.message);
+                                throw new Error(`Invalid JSON response: ${responseText}`);
+                            }
+                        } catch (error) {
+                            logToConsole('Total Value API Error:', error.message);
+                            logToConsole('Error stack:', error.stack);
+                            throw error;
+                        }
+                    })(),
+
+                    // Gemini API call for total value
+                    (async () => {
+                        logToConsole('\n=== Gemini Total Value Analysis Request ===');
+                        try {
+                            const response = await fetch(`${CONFIG.RT_ENDPOINT}/gemini-chat-completion`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    model: CONFIG.GEMINI_MODEL_MARKET_VALUE,
+                                    contents: [
+                                        {
+                                            role: "user",
+                                            parts: [
+                                                {
+                                                    text: totalValuePrompt
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    generationConfig: {
+                                        temperature: 0,
+                                        responseMimeType: "application/json"
+                                    }
+                                })
+                            });
+
+                            if (!response.ok) {
+                                const errorText = await response.text();
+                                logToConsole(`Gemini Total Value API Error Response: ${errorText}`, true);
+                                throw new Error(`Gemini Total Value API call failed: ${response.statusText}. Details: ${errorText}`);
+                            }
+
+                            const result = await response.json();
+                            if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+                                logToConsole(`Invalid Gemini Total Value API Response Structure: ${JSON.stringify(result)}`, true);
+                                throw new Error('Invalid Gemini Total Value API response format');
+                            }
+
+                            const geminiTotalValueContent = result.candidates[0].content.parts[0].text;
+                            logToConsole('Gemini Total Value Response:', geminiTotalValueContent);
+
+                            try {
+                                const geminiTotalValueJson = JSON.parse(geminiTotalValueContent);
+                                const geminiValue = parseFloat(geminiTotalValueJson.totalValue);
+                                const formattedGeminiTotal = geminiValue.toLocaleString('en-IN', {
+                                    maximumFractionDigits: 2,
+                                    minimumFractionDigits: 2
+                                });
+
+                                // Update the Gemini total value in the stats table
+                                const statsTable = document.querySelector('.stats-table');
+                                if (statsTable) {
+                                    const geminiTotalValueDisplay = document.getElementById('geminiTotalValueDisplay');
+                                    if (geminiTotalValueDisplay) {
+                                        geminiTotalValueDisplay.textContent = formattedGeminiTotal;
+                                    }
+                                }
+                            } catch (e) {
+                                logToConsole('Error parsing Gemini total value JSON:', e.message);
+                                throw new Error(`Invalid Gemini total value JSON response: ${geminiTotalValueContent}`);
+                            }
+
+                            return new Response(geminiTotalValueContent, {
+                                status: response.status,
+                                statusText: response.statusText,
+                                headers: response.headers
+                            });
+                        } catch (error) {
+                            logToConsole(`Gemini Total Value API Error: ${error.message}`, true);
+                            throw error;
+                        }
+                    })()
+                ];
+
+                // Execute all API calls
+                const [openAIResponse, geminiResponse, totalValueResponse] = await Promise.all(apiCalls);
+
+                // Process responses with detailed logging
+                if (!openAIResponse.ok) {
+                    const errorText = await openAIResponse.text();
+                    logToConsole(`OpenAI API Error Response: ${errorText}`, true);
+                    throw new Error(`OpenAI API call failed: ${openAIResponse.statusText}. Details: ${errorText}`);
+                }
+
+                const openAIResult = await openAIResponse.json();
+                if (!openAIResult.choices || !openAIResult.choices[0] || !openAIResult.choices[0].message) {
+                    logToConsole(`Invalid OpenAI API Response Structure: ${JSON.stringify(openAIResult)}`, true);
+                    throw new Error('Invalid OpenAI API response format');
+                }
+
+                const openAIContent = openAIResult.choices[0].message.content;
+
+                // Process total value response
+                const totalValueResult = await totalValueResponse.json();
+                logToConsole('\n=== Total Market Value API Debug ===');
+                logToConsole('Response Status:', totalValueResponse.status);
+                logToConsole('Response Headers:', JSON.stringify(Object.fromEntries(totalValueResponse.headers.entries())));
+                logToConsole('Raw Response:', JSON.stringify(totalValueResult, null, 2));
+
+                if (totalValueResult && totalValueResult.choices && totalValueResult.choices[0] && totalValueResult.choices[0].message) {
+                    const totalValueContent = totalValueResult.choices[0].message.content;
+                    try {
+                        const totalValueJson = JSON.parse(totalValueContent);
+                        const formattedTotal = totalValueJson.totalValue.toLocaleString('en-IN', {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                        });
+
+                        const openAIValueDisplay = document.getElementById('openAITotalValueDisplay');
+                        if (openAIValueDisplay) {
+                            openAIValueDisplay.textContent = formattedTotal;
+                            
+                            // Compare with Gemini value if available
+                            const geminiValueDisplay = document.getElementById('geminiTotalValueDisplay');
+                            if (geminiValueDisplay && geminiValueDisplay.textContent !== 'Waiting...') {
+                                compareAndHighlightTNAV(formattedTotal, geminiValueDisplay.textContent);
+                            }
+                        }
+                    } catch (e) {
+                        logToConsole('Error parsing OpenAI total value JSON:', e.message);
+                    }
+                } else {
+                    logToConsole('Invalid or unexpected total value response structure');
+                    logToConsole('Response keys:', Object.keys(totalValueResult || {}));
+                    if (totalValueResult && totalValueResult.error) {
+                        logToConsole('Error details:', totalValueResult.error);
+                    }
+
+                    // Update display with error
+                    const openAIValueDisplay = document.getElementById('openAITotalValueDisplay');
+                    if (openAIValueDisplay) {
+                        openAIValueDisplay.textContent = 'Error analyzing';
+                    }
+                }
+
+                // Log all responses for comparison
+                logToConsole('=== API Response Comparison ===');
+                logToConsole('OpenAI Response:');
+                logToConsole(openAIContent);
+                logToConsole('\nGemini Response:');
+                logToConsole(geminiResponse);
+                logToConsole('=== End Comparison ===\n');
+
+                try {
+                    // Clean up the OpenAI content and return it for processing
+                    const cleanContent = openAIContent.replace(/```json\n|\n```|```/g, '').trim();
+                    const parsedContent = JSON.parse(cleanContent);
+
+                    // Update the schema analysis display with the structure information
+                    const schemaDisplay = document.getElementById('schemaAnalysisDisplay');
+                    if (schemaDisplay) {
+                        const rowNum = parsedContent.dataStartRow;
+                        const cols = parsedContent.columns;
+                        const displayValue = `${rowNum}-${cols.isin}-${cols.instrumentName}-${cols.marketValue}-${cols.quantity}`;
+                        schemaDisplay.textContent = displayValue;
+                        
+                        // Compare schemas after both are populated
+                        const geminiSchemaDisplay = document.getElementById('geminiSchemaDisplay');
+                        if (geminiSchemaDisplay && geminiSchemaDisplay.textContent !== 'Waiting...') {
+                            compareAndHighlightSchemas(displayValue, geminiSchemaDisplay.textContent);
+                        }
+                    }
+
+                    return parsedContent;
+                } catch (e) {
+                    logToConsole(`Failed to parse OpenAI content: ${openAIContent}`, true);
+                    throw new Error('Failed to parse OpenAI response as JSON');
+                }
+            } catch (error) {
+                logToConsole(`API Error: ${error.message}`, true);
+                throw error;
+            }
+        }
+
+        function createDownloadButton(fileName, content) {
+            // We don't need this function anymore since the button is hidden
+            // Just log for debugging
+            logToConsole('Original file created successfully');
+        }
+
+        function createModifiedDownloadButton(fileName, content) {
+            const downloadBtn = document.getElementById('downloadButton2');
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+                downloadBtn.style.backgroundColor = '#16a34a';  // Set green background when enabled
+
+                // Update the click handler
+                downloadBtn.onclick = () => {
+                    const blob = new Blob([content], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                };
+            }
+        }
+
+        function displayInTable(rows) {
+            const outputContainer = document.getElementById('outputContainer');
+
+            // Create table
+            const table = document.createElement('table');
+            table.className = 'data-table';
+
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = rows[0].split('|');
+
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                th.className = 'sortable';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create body
+            const tbody = document.createElement('tbody');
+            for (let i = 1; i < rows.length; i++) {
+                const row = document.createElement('tr');
+                const cells = rows[i].split('|');
+
+                cells.forEach((cell, index) => {
+                    const td = document.createElement('td');
+                    if (index === 4 || index === 5) {  // Market Value or Quantity columns
+                        const numValue = parseFloat(cell.replace(/[^\d.-]/g, ''));
+                        td.textContent = numValue.toLocaleString('en-IN', {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                        });
+                        td.style.textAlign = 'right';
+                    } else {
+                        td.textContent = cell;
+                        td.style.textAlign = 'left';
+                    }
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            }
+            table.appendChild(tbody);
+
+            // Clear and add the new table
+            outputContainer.innerHTML = '';
+            outputContainer.appendChild(table);
+
+            // Add expand button
+            const expandButton = document.getElementById('expandTableBtn');
+            expandButton.classList.add('active');
+
+            // Setup table functionality
+            setupSortableTable(table);
+            setupTableFilter(table);
+            setupContextMenu(table);
+            setupBankNameContext(table);
+
+            // Setup expand button functionality
+            setupExpandButton(table);
+        }
+
+        function setupExpandButton(table) {
+            const expandButton = document.getElementById('expandTableBtn');
+            expandButton.onclick = function () {
+                const modal = document.getElementById('tableModal');
+                const modalContainer = modal.querySelector('.modal-table-container');
+
+                const tableClone = table.cloneNode(true);
+                modalContainer.innerHTML = '';
+                modalContainer.appendChild(tableClone);
+
+                // Setup sorting and filtering for the cloned table
+                setupSortableTable(tableClone);
+                setupTableFilter(tableClone);
+                setupContextMenu(tableClone);
+                setupBankNameContext(tableClone);
+
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            };
+        }
+
+        function setupTableFilter(table) {
+            // Remove any existing filter container
+            const existingFilter = table.parentElement.querySelector('.filter-container');
+            if (existingFilter) {
+                existingFilter.remove();
+            }
+
+            const filterContainer = document.createElement('div');
+            filterContainer.className = 'filter-container';
+
+            const filterInput = document.createElement('input');
+            filterInput.type = 'text';
+            filterInput.className = 'filter-input';
+            filterInput.placeholder = 'Quick Filter (type to search across all columns)...';
+
+            filterContainer.appendChild(filterInput);
+            table.parentElement.insertBefore(filterContainer, table);
+
+            filterInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = table.querySelectorAll('tbody tr');
+
+                rows.forEach(row => {
+                    const text = Array.from(row.cells)
+                        .map(cell => cell.textContent)
+                        .join(' ')
+                        .toLowerCase();
+
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
+
+        // Add these table setup functions
+        function setupSortableTable(table) {
+            const headers = table.querySelectorAll('th');
+            headers.forEach((header, index) => {
+                header.classList.add('sortable');
+                header.addEventListener('click', () => {
+                    const isAsc = header.classList.contains('asc');
+                    // Remove sort classes from all headers
+                    headers.forEach(h => {
+                        h.classList.remove('asc', 'desc');
+                    });
+                    // Add appropriate sort class
+                    header.classList.add(isAsc ? 'desc' : 'asc');
+
+                    // Sort the table
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                    rows.sort((a, b) => {
+                        const aValue = a.cells[index].textContent;
+                        const bValue = b.cells[index].textContent;
+
+                        // Check if the values are numbers
+                        const aNum = parseFloat(aValue.replace(/,/g, ''));
+                        const bNum = parseFloat(bValue.replace(/,/g, ''));
+
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return isAsc ? bNum - aNum : aNum - bNum;
+                        }
+
+                        return isAsc ?
+                            bValue.localeCompare(aValue) :
+                            aValue.localeCompare(bValue);
+                    });
+
+                    // Reorder the rows
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        }
+
+        function setupContextMenu(table) {
+            let currentContextMenu = null;
+
+            function createContextMenu(header, columnIndex, x, y) {
+                if (currentContextMenu) {
+                    currentContextMenu.remove();
+                }
+
+                const menu = document.createElement('div');
+                menu.className = 'context-menu';
+                
+                // Get the header's position relative to the viewport
+                const headerRect = header.getBoundingClientRect();
+                
+                // Calculate position relative to viewport
+                menu.style.position = 'fixed';  // Change to fixed positioning
+                menu.style.left = `${headerRect.left}px`;
+                menu.style.top = `${headerRect.bottom}px`;
+
+                // Determine if column is numeric (Market Value or Quantity)
+                const isNumeric = columnIndex === 4 || columnIndex === 5;  // Market Value or Quantity columns
+
+                if (isNumeric) {
+                    menu.innerHTML = `
+                        <div class="context-menu-item" data-action="sort-asc">Sort Ascending</div>
+                        <div class="context-menu-item" data-action="sort-desc">Sort Descending</div>
+                        <div class="context-menu-separator"></div>
+                        <div class="context-menu-item" data-action="stats">Show Statistics</div>
+                    `;
+                } else {
+                    menu.innerHTML = `
+                        <div class="context-menu-item" data-action="sort-asc">Sort Ascending</div>
+                        <div class="context-menu-item" data-action="sort-desc">Sort Descending</div>
+                        <div class="context-menu-separator"></div>
+                        <div class="context-menu-item" data-action="unique">Show Unique Values</div>
+                    `;
+                }
+
+                document.body.appendChild(menu);
+                currentContextMenu = menu;
+
+                // Handle menu item clicks
+                menu.addEventListener('click', (e) => {
+                    const action = e.target.dataset.action;
+                    if (!action) return;
+
+                    const rows = Array.from(table.querySelectorAll('tbody tr'));
+                    const values = rows.map(row => row.cells[columnIndex].textContent);
+
+                    switch (action) {
+                        case 'sort-asc':
+                        case 'sort-desc':
+                            header.click(); // Use existing sort functionality
+                            break;
+                        case 'stats':
+                            const nums = values.map(v => parseFloat(v.replace(/,/g, '')));
+                            const sum = nums.reduce((a, b) => a + b, 0);
+                            const avg = sum / nums.length;
+                            const min = Math.min(...nums);
+                            const max = Math.max(...nums);
+                            alert(`Statistics for ${header.textContent}:
+                                \nAverage: ${avg.toLocaleString('en-IN')}
+                                \nMinimum: ${min.toLocaleString('en-IN')}
+                                \nMaximum: ${max.toLocaleString('en-IN')}
+                                \nTotal: ${sum.toLocaleString('en-IN')}`);
+                            break;
+                        case 'unique':
+                            const unique = [...new Set(values)].sort();
+                            alert(`Unique values in ${header.textContent}:\n\n${unique.join('\n')}`);
+                            break;
+                    }
+                    menu.remove();
+                });
+            }
+
+            // Add context menu event listener to table headers
+            table.querySelectorAll('th').forEach((th, index) => {
+                th.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    createContextMenu(th, index, e.pageX, e.pageY);
+                });
+            });
+
+            // Close context menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (currentContextMenu && !currentContextMenu.contains(e.target)) {
+                    currentContextMenu.remove();
+                }
+            });
+        }
+
+        function setupBankNameContext(table) {
+            // For mutual fund data, we'll adapt this to show instrument details
+            table.querySelectorAll('tbody tr').forEach(row => {
+                row.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    const isin = row.cells[0].textContent;
+                    const name = row.cells[1].textContent;
+                    const value = row.cells[2].textContent;
+
+                    alert(`Instrument Details:
+                        \nISIN: ${isin}
+                        \nName: ${name}
+                        \nMarket Value: ${value}`);
+                });
+            });
+        }
+
+        // Add modal close functionality
+        document.querySelector('.close-modal').addEventListener('click', function () {
+            document.getElementById('tableModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('tableModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Tab switching functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+
+        // Set initial active tab to data if we have data
+        const outputContainer = document.getElementById('outputContainer');
+        if (outputContainer.textContent.trim()) {
+            const dataTab = document.querySelector('[data-tab="data"]');
+            const dataPane = document.getElementById('data');
+
+            // Remove active class from all buttons and panes
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+
+            // Activate data tab
+            dataTab.classList.add('active');
+            dataPane.classList.add('active');
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and panes
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanes.forEach(pane => pane.classList.remove('active'));
+
+                // Add active class to clicked button and corresponding pane
+                button.classList.add('active');
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Handle override form submission
+        document.getElementById('overrideForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Get the submit button
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonContent = submitButton.innerHTML;
+
+            // Disable the submit button and show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <span class="material-icons" style="animation: spin 1s linear infinite;">sync</span>
+                Processing...
+            `;
+
+            const fileInput = document.getElementById('mfFileInput');
+            const sheetNameInput = document.getElementById('sheetNameInput');
+            const schemeNameInput = document.getElementById('schemeNameInput');
+            const monthEndInput = document.getElementById('monthEndInput');
+            const sheetName = sheetNameInput.value.trim();
+
+            if (!fileInput.files[0]) {
+                alert("Please select a file first!");
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+                return;
+            }
+
+            if (!sheetName) {
+                alert("Please enter a sheet name!");
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+                return;
+            }
+
+            if (!schemeNameInput.value.trim()) {
+                alert("Please enter the scheme name!");
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+                return;
+            }
+
+            if (!monthEndInput.value) {
+                alert("Please select the month end date!");
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+                return;
+            }
+
+            try {
+                // Clear previous console output
+                document.getElementById('mfConsoleOutput').innerHTML = '';
+                logToConsole('Processing with manual schema override...');
+
+                // Create manual schema object
+                const manualSchema = {
+                    dataStartRow: parseInt(document.getElementById('dataStartRow').value),
+                    columns: {
+                        isin: document.getElementById('isinColumn').value.toUpperCase(),
+                        instrumentName: document.getElementById('instrumentNameColumn').value.toUpperCase(),
+                        marketValue: document.getElementById('marketValueColumn').value.toUpperCase(),
+                        quantity: document.getElementById('quantityColumn').value.toUpperCase()
+                    }
+                };
+                logToConsole('Manual Schema:', JSON.stringify(manualSchema, null, 2));
+
+                // Reset displays
+                document.getElementById('totalValueDisplay').textContent = 'Waiting ...';
+                document.getElementById('recordCountDisplay').textContent = 'Waiting ...';
+                document.getElementById('totalQuantityDisplay').textContent = 'Waiting ...';
+                document.getElementById('diffAmtDisplay').textContent = 'Waiting ...';
+
+                // First analyze with AI to get the OpenAI value
+                const initialRows = await extractInitialRows(fileInput.files[0], sheetName);
+                const aiAnalysis = await analyzeWithAI(initialRows, fileInput.files[0], sheetName);
+
+                logToConsole('Starting manual processing with schema:', JSON.stringify(manualSchema, null, 2));
+
+                // Then process with manual schema
+                await processFullFile(fileInput.files[0], sheetName, manualSchema);
+
+                // Hide the override modal
+                document.getElementById('overrideModal').style.display = 'none';
+
+                // Log success
+                logToConsole('File processed successfully with manual schema!');
+
+                // Activate the Data Table tab
+                const dataTabButton = document.querySelector('[data-tab="data"]');
+                const tabPanes = document.querySelectorAll('.tab-pane');
+                const tabButtons = document.querySelectorAll('.tab-button');
+
+                // Remove active class from all buttons and panes
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanes.forEach(pane => pane.classList.remove('active'));
+
+                // Add active class to data tab button and pane
+                dataTabButton.classList.add('active');
+                document.getElementById('data').classList.add('active');
+
+            } catch (error) {
+                logToConsole(`Error processing file: ${error.message}`, true);
+                alert('Error processing file. Please check the console for details.');
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonContent;
+            }
+        });
+
+        // Force uppercase for column inputs
+        ['isinColumn', 'instrumentNameColumn', 'marketValueColumn', 'quantityColumn'].forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+            });
+        });
+
+        // Add override button handlers
+        document.getElementById('overrideButton').addEventListener('click', function () {
+            document.getElementById('overrideModal').style.display = 'block';
+        });
+
+        document.getElementById('cancelOverride').addEventListener('click', function () {
+            document.getElementById('overrideModal').style.display = 'none';
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('overrideModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+
+        // Add event listener for scheme name to auto-uppercase
+        document.getElementById('schemeNameInput').addEventListener('input', function () {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Add append button handler
+        document.getElementById('appendButton').addEventListener('click', function() {
+            FileAppender.showModal();
+        });
+
+        // Add this new function for schema comparison
+        function compareAndHighlightSchemas(openaiSchema, geminiSchema) {
+            const openaiDisplay = document.getElementById('schemaAnalysisDisplay');
+            const geminiDisplay = document.getElementById('geminiSchemaDisplay');
+            
+            if (openaiSchema === geminiSchema) {
+                // Schemas match - reset background colors and remove icons
+                openaiDisplay.style.backgroundColor = '';
+                geminiDisplay.style.backgroundColor = '';
+                openaiDisplay.innerHTML = openaiSchema;
+                geminiDisplay.innerHTML = geminiSchema;
+            } else {
+                // Schemas don't match - highlight with more noticeable orange warning color
+                const warningColor = '#FFCC80';  // More saturated orange
+                openaiDisplay.style.backgroundColor = warningColor;
+                geminiDisplay.style.backgroundColor = warningColor;
+                
+                // Add warning icon
+                const warningIcon = '<span class="material-icons" style="font-size: 14px; color: #e65100; vertical-align: middle; margin-right: 4px;">warning</span>';
+                openaiDisplay.innerHTML = warningIcon + openaiSchema;
+                geminiDisplay.innerHTML = warningIcon + geminiSchema;
+                
+                // Log the mismatch for debugging
+                logToConsole(`Schema mismatch detected:\nOpenAI: ${openaiSchema}\nGemini: ${geminiSchema}`, true);
+            }
+        }
+
+        // Add this new function for T-NAV comparison
+        function compareAndHighlightTNAV(openaiValue, geminiValue) {
+            const openaiDisplay = document.getElementById('openAITotalValueDisplay');
+            const geminiDisplay = document.getElementById('geminiTotalValueDisplay');
+            
+            // Convert string values to numbers for comparison
+            const openaiNum = parseFloat(openaiValue.replace(/,/g, ''));
+            const geminiNum = parseFloat(geminiValue.replace(/,/g, ''));
+            
+            if (openaiNum === geminiNum) {
+                // Values match - reset background colors and remove icons
+                openaiDisplay.style.backgroundColor = '';
+                geminiDisplay.style.backgroundColor = '';
+                openaiDisplay.innerHTML = openaiValue;
+                geminiDisplay.innerHTML = geminiValue;
+            } else {
+                // Values don't match - highlight with warning color
+                const warningColor = '#FFCC80';  // Same orange as schema comparison
+                openaiDisplay.style.backgroundColor = warningColor;
+                geminiDisplay.style.backgroundColor = warningColor;
+                
+                // Add warning icon
+                const warningIcon = '<span class="material-icons" style="font-size: 14px; color: #e65100; vertical-align: middle; margin-right: 4px;">warning</span>';
+                openaiDisplay.innerHTML = warningIcon + openaiValue;
+                geminiDisplay.innerHTML = warningIcon + geminiValue;
+                
+                // Log the mismatch for debugging
+                logToConsole(`T-NAV mismatch detected:\nOpenAI: ${openaiValue}\nGemini: ${geminiValue}`, true);
+            }
+        }
+
+        // Add this CSS for the spinning animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Add this to your existing JavaScript, after the other modal setup code
+        document.getElementById('expandLogsBtn').addEventListener('click', function() {
+            const modal = document.getElementById('logsModal');
+            const modalContainer = modal.querySelector('.modal-logs-container');
+            const consoleOutput = document.getElementById('mfConsoleOutput');
+
+            // Clone the console output
+            modalContainer.innerHTML = consoleOutput.innerHTML;
+
+            // Show the modal
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close logs modal when clicking the close button
+        document.querySelector('#logsModal .close-modal').addEventListener('click', function() {
+            document.getElementById('logsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        // Close logs modal when clicking outside
+        document.getElementById('logsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Add legend button functionality
+        document.getElementById('legendButton').addEventListener('click', function() {
+            document.getElementById('legendModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close legend modal when clicking the close button
+        document.querySelector('#legendModal .close-modal').addEventListener('click', function() {
+            document.getElementById('legendModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        // Close legend modal when clicking outside
+        document.getElementById('legendModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+    </script>
+    <script src="file_appender.js"></script>
+    
+    <footer class="footer">
+        Amar Harolikar <span>•</span> Specialist - Decision Sciences & Applied Generative AI <span>•</span>
+        <a href="https://www.linkedin.com/in/amarharolikar" target="_blank" rel="noopener noreferrer">LinkedIn</a> <span>•</span>
+        <a href="https://rex.tigzig.com" target="_blank" rel="noopener noreferrer">rex.tigzig.com</a> <span>•</span>
+        <a href="https://tigzig.com" target="_blank" rel="noopener noreferrer">tigzig.com</a>
+    </footer>
+</body>
+
+</html>
