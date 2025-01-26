@@ -12,6 +12,10 @@
     <link href="styles.css" rel="stylesheet">
     <!-- Include configuration -->
     <script src="config.js"></script>
+    <!-- Include API processor -->
+    <script src="api_processor.js"></script>
+    <!-- Include File processor -->
+    <script src="file_processor.js"></script>
     <style>
         /* Remove any conflicting styles first */
         #totalValueDisplay,
@@ -54,11 +58,33 @@
             border-collapse: collapse;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             table-layout: fixed;
+            border-spacing: 0;  /* Remove default spacing */
         }
 
         .stats-table td {
-            width: 25%;
-            /* Each column takes 25% of the table width */
+            /* Adjust column widths */
+            width: auto;  /* Remove fixed width */
+        }
+
+        /* Adjust column widths specifically */
+        .stats-table td:nth-child(1) {
+            width: 20%;  /* Keep first column width */
+        }
+
+        .stats-table td:nth-child(2) {
+            width: 20%;  /* Slightly reduce second column */
+            padding-right: 2px;  /* Reduce right padding */
+        }
+
+        .stats-table td:nth-child(3) {
+            width: 40%;  /* Increase third column width more */
+            padding-left: 2px;  /* Reduce left padding */
+            padding-right: 2px;  /* Reduce right padding */
+        }
+
+        .stats-table td:nth-child(4) {
+            width: 20%;  /* Slightly reduce fourth column */
+            padding-left: 2px;  /* Reduce left padding */
         }
 
         .stats-table tr,
@@ -76,23 +102,32 @@
         }
 
         .stats-label {
-            padding: 2px 6px;
+            padding: 2px 3px;  /* Further reduce horizontal padding */
             color: #333;
             font-weight: 500;
             font-size: 12px;
-            white-space: nowrap;
-            width: 40%;
+            white-space: normal;  /* Allow text to wrap */
+            width: auto;  /* Let content determine width */
+        }
+
+        /* Special handling for model name labels that can be long */
+        #geminiModelLabel, #geminiSchemaLabel {
+            white-space: normal;
+            line-height: 1.2;
+            height: auto;
+            min-height: 24px;
+            padding: 4px;  /* Slightly reduce padding */
         }
 
         .stats-value {
-            padding: 2px 6px;
+            padding: 2px 3px;  /* Further reduce horizontal padding */
             text-align: center;
             font-weight: 600;
             font-size: 12px;
             white-space: nowrap;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             color: #1e40af;
-            width: 60%;
+            width: auto;  /* Let content determine width */
         }
 
         /* Override any other styles that might affect alignment */
@@ -237,6 +272,35 @@
 
         .form-group input::placeholder {
             color: #999;
+        }
+
+        .form-select {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            height: 28px;
+            width: 100%;
+            background-color: white;
+        }
+
+        .form-select:focus {
+            border-color: #007BFF;
+            outline: none;
+        }
+
+        #modelsForm .control-button {
+            height: 32px;
+            min-width: 80px;
+            background-color: #1e40af;
+        }
+
+        #modelsForm #cancelModels {
+            background-color: #6B7280;
+        }
+
+        #modelsForm .control-button:hover {
+            opacity: 0.9;
         }
 
         #overrideModal .modal-content {
@@ -473,35 +537,24 @@
                     </span>
                     <span class="button-text">Upload</span>
                 </label>
-                <input type="file" id="mfFileInput" accept=".xlsx, .xls" />
+                <input type="file" id="mfFileInput" accept=".xlsx, .xls" style="position: absolute; opacity: 0; width: 0; height: 0; z-index: -1;" />
                 <div class="sheet-name-input">
-                    <input type="text" id="sheetNameInput" placeholder="Sheet Name" style="
+                    <input type="text" id="sheetNameInput" placeholder="Sheet Name" style="padding: 8px 8px !important; border: 1px solid #007BFF !important; border-radius: 5px !important; font-size: 14px !important; width: 140px !important; outline: none !important; min-width: 140px !important; max-width: 140px !important;" />
+                    <input type="text" id="schemeNameInput" placeholder="scheme name (any) " maxlength="30" style="padding: 8px 12px !important; border: 1px solid #007BFF !important; border-radius: 5px !important; font-size: 14px !important; width: 200px !important; outline: none !important; margin-left: 5px !important; text-transform: uppercase !important;" />
+                    <input type="date" id="monthEndInput" style="padding: 4px 2px !important; border: 1px solid #007BFF !important; border-radius: 5px !important; font-size: 14px !important; width: 115px !important; outline: none !important; margin-left: 5px !important; min-width: 115px !important; max-width: 115px !important;" />
+                    <select id="delimiterInput" style="
                             padding: 8px 12px;
                             border: 1px solid #007BFF;
                             border-radius: 5px;
                             font-size: 14px;
-                            width: 150px;
-                            outline: none;
-                        " />
-                    <input type="text" id="schemeNameInput" placeholder="Scheme Name" maxlength="30" style="
-                            padding: 8px 12px;
-                            border: 1px solid #007BFF;
-                            border-radius: 5px;
-                            font-size: 14px;
-                            width: 200px;
+                            width: 100px;
                             outline: none;
                             margin-left: 5px;
-                            text-transform: uppercase;
-                        " />
-                    <input type="date" id="monthEndInput" style="
-                            padding: 8px 12px;
-                            border: 1px solid #007BFF;
-                            border-radius: 5px;
-                            font-size: 14px;
-                            width: 150px;
-                            outline: none;
-                            margin-left: 5px;
-                        " />
+                        ">
+                        <option value="|">Pipe (|)</option>
+                        <option value=",">Comma (,)</option>
+                        <option value="\t">Tab</option>
+                    </select>
                 </div>
             </div>
             <div class="file-info-container">
@@ -544,38 +597,65 @@
                     <span class="button-text">Legend</span>
                 </button>
             </div>
+            <!-- Adding new button row -->
+            <div class="button-row" style="margin-top: 2px; display: flex; gap: 10px;">
+                <button id="placeholderBtn1" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">settings</span>
+                    </span>
+                    <span class="button-text">Models</span>
+                </button>
+                <button id="placeholderBtn2" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">add_circle</span>
+                    </span>
+                    <span class="button-text">Coming Soon</span>
+                </button>
+                <button id="placeholderBtn3" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">add_circle</span>
+                    </span>
+                    <span class="button-text">Cmg. Sn</span>
+                </button>
+                <button id="placeholderBtn4" class="control-button">
+                    <span class="button-icon">
+                        <span class="material-icons">add_circle</span>
+                    </span>
+                    <span class="button-text">Cmg. Sn.</span>
+                </button>
+            </div>
         </div>
         <div class="stats-container">
             <table class="stats-table">
                 <tr>
-                    <td class="stats-label">T-NAV / txt file</td>
-                    <td class="stats-value" id="totalValueDisplay">Waiting ...</td>
-                    <td class="stats-label" id="schemaModelLabel">Schema /</td>
-                    <td class="stats-value" id="schemaAnalysisDisplay">Waiting...</td>
-                </tr>
-                <tr>
-                    <td class="stats-label">Num of records / txt file</td>
-                    <td class="stats-value" id="recordCountDisplay">Waiting ...</td>
-                    <td class="stats-label" id="geminiSchemaLabel">Schema /</td>
-                    <td class="stats-value" id="geminiSchemaDisplay">Waiting...</td>
-                </tr>
-                <tr>
-                    <td class="stats-label" id="geminiModelLabel">T-NAV /</td>
-                    <td class="stats-value" id="geminiTotalValueDisplay">Waiting ...</td>
-                    <td class="stats-label">Cash/ Derivatives / Diff Amt</td>
+                    <td class="stats-label">Cash-Dervt/Diff Amt</td>
                     <td class="stats-value" id="diffAmtDisplay">Waiting...</td>
-                </tr>
-                <tr>
-                    <td class="stats-label" id="openaiModelLabel">T-NAV /</td>
-                    <td class="stats-value" id="openAITotalValueDisplay">Waiting ...</td>
-                    <td class="stats-label">TBD 1</td>
-                    <td class="stats-value" id="performanceScoreDisplay"></td>
+                    <td class="stats-label" id="schemaModelLabel">Schema /gpt-4o</td>
+                    <td class="stats-value" id="schemaAnalysisDisplay">Waiting...</td>
                 </tr>
                 <tr>
                     <td class="stats-label">Total Quantity/ txt file</td>
                     <td class="stats-value" id="totalQuantityDisplay">Waiting...</td>
+                    <td class="stats-label" id="geminiSchemaLabel">Schema /anthropic/claude-3.5-sonnet</td>
+                    <td class="stats-value" id="geminiSchemaDisplay">Waiting...</td>
+                </tr>
+                <tr>
+                    <td class="stats-label">T-MV / txt file</td>
+                    <td class="stats-value" id="totalValueDisplay">Waiting ...</td>
+                    <td class="stats-label" id="openaiModelLabel">T-MV /gpt-4o-mini</td>
+                    <td class="stats-value" id="openAITotalValueDisplay">Waiting...</td>
+                </tr>
+                <tr>
+                    <td class="stats-label">Num. Records</td>
+                    <td class="stats-value" id="recordCountDisplay">Waiting ...</td>
+                    <td class="stats-label" id="geminiModelLabel">T-MV /anthropic/claude-3-haiku</td>
+                    <td class="stats-value" id="geminiTotalValueDisplay">Waiting...</td>
+                </tr>
+                <tr>
                     <td class="stats-label">TBD 2</td>
                     <td class="stats-value" id="investmentStyleDisplay"></td>
+                    <td class="stats-label">TBD 1</td>
+                    <td class="stats-value" id="performanceScoreDisplay"></td>
                 </tr>
             </table>
         </div>
@@ -687,20 +767,20 @@
                     <th>Description</th>
                 </tr>
                 <tr>
-                    <td>T-NAV / txt file</td>
-                    <td>Total market value / NAV from the created text file.</td>
+                    <td>T-MV / txt file</td>
+                    <td>Total market value from the created text file.</td>
                 </tr>
                 <tr>
                     <td>Num of records / txt file</td>
                     <td>Number of records from the created text file, used for validation against the ISIN count from the Excel file.</td>
                 </tr>
                 <tr>
-                    <td>T-NAV /gpt-4o-mini</td>
-                    <td>Total market value/NAV from the input Excel file as identified by OpenAI model. Used for calculating Cash/Derivatives difference amount. Orange color indicates variance from Gemini value requiring review.</td>
+                    <td>T-MV /gpt-4o-mini</td>
+                    <td>Total market value from the input Excel file as identified by OpenAI model. Used for calculating Cash/Derivatives difference amount. Orange color indicates variance from Gemini value requiring review.</td>
                 </tr>
                 <tr>
-                    <td>T-NAV /gemini-2.0-flash-exp</td>
-                    <td>Total market value/NAV from the input Excel file as identified by Google Gemini model. Orange color indicates variance from OpenAI value requiring review.</td>
+                    <td>T-MV /'validation llm model name'</td>
+                    <td>Total market value from the input Excel file as identified by the validation llm model chosen. Additional value obtained for validation purposes. Orange color indicates variance from OpenAI value requiring review.</td>
                 </tr>
                 <tr>
                     <td>Total Quantity/ txt file</td>
@@ -708,11 +788,11 @@
                 </tr>
                 <tr>
                     <td>Schema /gpt-4o</td>
-                    <td>Schema from OpenAI in format (e.g., 8-C-B-G-F): Row number followed by column letters for ISIN, Instrument Name, Market Value, and Quantity respectively.</td>
+                    <td>Schema from OpenAI in format (e.g., 8-C-B-G-F): Row number followed by column letters for ISIN, Instrument Name, Market Value, and Quantity respectively.Used for data import</td>
                 </tr>
                 <tr>
-                    <td>Schema /gemini-2.0-flash-exp</td>
-                    <td>Schema from Google Gemini in same format as above. Orange color indicates mismatch with OpenAI schema.</td>
+                    <td>Schema /'validation llm model name'</td>
+                    <td>Schema from validation llm model in same format as above. Additional schema obtained for validation purposes. Orange color indicates mismatch with OpenAI schema.</td>
                 </tr>
                 <tr>
                     <td>Cash/ Derivatives / Diff Amt</td>
@@ -721,6 +801,66 @@
             </table>
         </div>
     </div>
+
+    <!-- Add Models Modal -->
+    <div id="modelsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; padding: 20px;">
+            <h3 style="margin-top: 0;">Model Configuration</h3>
+            <p style="margin: 5px 0 15px 0; font-size: 12px; color: #666;">
+                Configure the AI models used for structure analysis and market value detection.
+            </p>
+            <form id="modelsForm" style="display: flex; flex-direction: column; gap: 12px;">
+                <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">LLM Models for Structure/Schema</h4>
+                <div class="form-group">
+                    <label for="openaiStructure">OpenAI Model (Structure)- For Importing Data</label>
+                    <select id="openaiStructure" class="form-select">
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="openrouterStructure">OpenRouter Model (Structure)- For Validations</label>
+                    <select id="openrouterStructure" class="form-select">
+                        <option value="openai/gpt-4o">openai/gpt-4o</option>
+                        <option value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
+                        <option value="google/gemini-2.0-flash-exp:free">google/gemini-2.0-flash-exp:free</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct">meta-llama/llama-3.3-70b-instruct</option>
+                        <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
+                        <option value="deepseek/deepseek-r1">deepseek/deepseek-r1</option>
+                        <option value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet</option>
+                        <option value="anthropic/claude-3-haiku">anthropic/claude-3-haiku</option>
+                    </select>
+                </div>
+                <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd; width: 100%;">
+                <h4 style="margin: 8px 0; color: #333; font-size: 14px;">LLM Models for Extracting Market Value</h4>
+                <div class="form-group">
+                    <label for="openaiMarketValue">OpenAI Model (Market Value)- For Importing Data</label>
+                    <select id="openaiMarketValue" class="form-select">
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="openrouterMarketValue">OpenRouter Model (Market Value)- For Validations</label>
+                    <select id="openrouterMarketValue" class="form-select">
+                        <option value="openai/gpt-4o">openai/gpt-4o</option>
+                        <option value="openai/gpt-4o-mini">openai/gpt-4o-mini</option>
+                        <option value="google/gemini-2.0-flash-exp:free">google/gemini-2.0-flash-exp:free</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct">meta-llama/llama-3.3-70b-instruct</option>
+                        <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
+                        <option value="deepseek/deepseek-r1">deepseek/deepseek-r1</option>
+                        <option value="anthropic/claude-3.5-sonnet">anthropic/claude-3.5-sonnet</option>
+                        <option value="anthropic/claude-3-haiku">anthropic/claude-3-haiku</option>
+                    </select>
+                </div>
+                <div class="form-buttons" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 5px;">
+                    <button type="button" id="cancelModels" class="control-button">Cancel</button>
+                    <button type="submit" class="control-button">Apply Models</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- End Models Modal -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script>
@@ -841,10 +981,10 @@
         const jsPDF = window.jspdf.jsPDF;
 
         // Set model names in labels
-        document.getElementById('geminiModelLabel').textContent = `T-NAV /${CONFIG.GEMINI_MODEL_MARKET_VALUE}`;
-        document.getElementById('openaiModelLabel').textContent = `T-NAV /${CONFIG.OPENAI_MODEL_MARKET_VALUE}`;
-        document.getElementById('schemaModelLabel').textContent = `Schema /${CONFIG.OPENAI_MODEL_STRUCTURE}`;
-        document.getElementById('geminiSchemaLabel').textContent = `Schema /${CONFIG.GEMINI_MODEL_STRUCTURE}`;
+        document.getElementById('geminiModelLabel').textContent = `T-MV-Validn./${CONFIG.OPENROUTER_MODEL_MARKET_VALUE}`;
+        document.getElementById('openaiModelLabel').textContent = `T-MV-Main/${CONFIG.OPENAI_MODEL_MARKET_VALUE}`;
+        document.getElementById('schemaModelLabel').textContent = `Schema-Main/${CONFIG.OPENAI_MODEL_STRUCTURE}`;
+        document.getElementById('geminiSchemaLabel').textContent = `Schema-Validn./${CONFIG.OPENROUTER_MODEL_STRUCTURE}`;
 
         // Function to log messages to the console
         function logToConsole(message, isError = false) {
@@ -857,12 +997,44 @@
             consoleOutput.scrollTop = consoleOutput.scrollHeight;
         }
 
+        // Add click handler for the file input label
+        document.querySelector('label[for="mfFileInput"]').addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent the default click behavior
+            const fileInput = document.getElementById('mfFileInput');
+            fileInput.click();
+        });
+
         // File input handler for mutual fund processing
         document.getElementById('mfFileInput').addEventListener('change', function () {
+            console.log('File input change event triggered');
+            console.log('Files:', this.files);
+            console.log('Number of files:', this.files ? this.files.length : 0);
+            
             const fileNameDisplay = document.getElementById('fileNameDisplay');
             const totalValueDisplay = document.getElementById('totalValueDisplay');
             const recordCountDisplay = document.getElementById('recordCountDisplay');
             const totalQuantityDisplay = document.getElementById('totalQuantityDisplay');
+
+            // Clear the processing logs
+            document.getElementById('mfConsoleOutput').innerHTML = '';
+
+            // Reset schema displays
+            document.getElementById('schemaAnalysisDisplay').textContent = 'Waiting...';
+            document.getElementById('geminiSchemaDisplay').textContent = 'Waiting...';
+            // Reset any schema highlighting
+            document.getElementById('schemaAnalysisDisplay').style.backgroundColor = '';
+            document.getElementById('geminiSchemaDisplay').style.backgroundColor = '';
+
+            // Reset T-MV displays
+            document.getElementById('geminiTotalValueDisplay').textContent = 'Waiting...';
+            document.getElementById('openAITotalValueDisplay').textContent = 'Waiting...';
+            // Reset any T-MV highlighting
+            document.getElementById('geminiTotalValueDisplay').style.backgroundColor = '';
+            document.getElementById('openAITotalValueDisplay').style.backgroundColor = '';
+
+            // Reset diff amount display
+            document.getElementById('diffAmtDisplay').textContent = 'Waiting...';
+            document.getElementById('diffAmtDisplay').style.backgroundColor = '';
 
             // Reset override form
             document.getElementById('overrideForm').reset();
@@ -875,6 +1047,16 @@
                 totalValueDisplay.textContent = 'Waiting ...';
                 recordCountDisplay.textContent = 'Waiting ...';
                 totalQuantityDisplay.textContent = 'Waiting ...';
+
+                // Reset download button state
+                const downloadBtn = document.getElementById('downloadButton2');
+                downloadBtn.disabled = true;
+                downloadBtn.style.backgroundColor = '';
+                downloadBtn.style.cursor = 'default';
+                downloadBtn.classList.add('disabled');
+                downloadBtn.setAttribute('disabled', 'disabled');
+                window._modifiedFileContent = null;
+                window._modifiedFileName = null;
             } else {
                 fileNameDisplay.textContent = 'No file selected';
                 totalValueDisplay.textContent = 'Waiting ...';
@@ -912,14 +1094,46 @@
             }
 
             try {
+                // Clear all display values before starting
+                document.getElementById('totalValueDisplay').textContent = 'Waiting ...';
+                document.getElementById('recordCountDisplay').textContent = 'Waiting ...';
+                document.getElementById('totalQuantityDisplay').textContent = 'Waiting ...';
+                document.getElementById('schemaAnalysisDisplay').textContent = 'Waiting...';
+                document.getElementById('geminiSchemaDisplay').textContent = 'Waiting...';
+                document.getElementById('geminiTotalValueDisplay').textContent = 'Waiting...';
+                document.getElementById('openAITotalValueDisplay').textContent = 'Waiting...';
+                document.getElementById('diffAmtDisplay').textContent = 'Waiting...';
+                document.getElementById('performanceScoreDisplay').textContent = '';
+                document.getElementById('investmentStyleDisplay').textContent = '';
+
+                // Clear any background colors
+                document.getElementById('schemaAnalysisDisplay').style.backgroundColor = '';
+                document.getElementById('geminiSchemaDisplay').style.backgroundColor = '';
+                document.getElementById('geminiTotalValueDisplay').style.backgroundColor = '';
+                document.getElementById('openAITotalValueDisplay').style.backgroundColor = '';
+                document.getElementById('diffAmtDisplay').style.backgroundColor = '';
+
+                // Clear the data table
+                document.getElementById('outputContainer').innerHTML = '';
+
                 // Clear previous console output
                 document.getElementById('mfConsoleOutput').innerHTML = '';
+
+                // Reset download button state
+                const downloadBtn = document.getElementById('downloadButton2');
+                downloadBtn.disabled = true;
+                downloadBtn.style.backgroundColor = '';
+                downloadBtn.style.cursor = 'default';
+                downloadBtn.classList.add('disabled');
+                downloadBtn.setAttribute('disabled', 'disabled');
+                window._modifiedFileContent = null;
+                window._modifiedFileName = null;
 
                 // Disable the process button while processing
                 this.disabled = true;
                 this.innerHTML = `
                     <span class="button-icon">
-                        <span class="material-icons">hourglass_empty</span>
+                        <span class="material-icons" style="animation: spin 1s linear infinite;">hourglass_empty</span>
                     </span>
                     <span class="button-text">Processing...</span>
                 `;
@@ -980,198 +1194,7 @@
             }
         }
 
-        async function processFullFile(file, sheetName, analysis) {
-            return new Promise((resolve, reject) => {
-                try {
-                    logToConsole('Processing full file...');
-                    const reader = new FileReader();
-
-                    reader.onload = function (e) {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-
-                            // Convert input sheet name to lowercase
-                            const inputSheetNameLower = sheetName.toLowerCase();
-
-                            // Find the sheet name in a case-insensitive way
-                            const actualSheetName = Object.keys(workbook.Sheets).find(
-                                name => name.toLowerCase() === inputSheetNameLower
-                            );
-
-                            if (!actualSheetName) {
-                                throw new Error(`Sheet "${sheetName}" not found in workbook`);
-                            }
-
-                            const sheet = workbook.Sheets[actualSheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                            // Get column indices (convert A,B,C to 0,1,2)
-                            const columnIndices = {
-                                isin: analysis.columns.isin.charCodeAt(0) - 65,
-                                instrumentName: analysis.columns.instrumentName.charCodeAt(0) - 65,
-                                marketValue: analysis.columns.marketValue.charCodeAt(0) - 65,
-                                quantity: analysis.columns.quantity.charCodeAt(0) - 65
-                            };
-
-                            logToConsole('Using column indices:', JSON.stringify(columnIndices));
-                            logToConsole('Starting from row:', analysis.dataStartRow);
-
-                            // Create headers for the pipe-delimited file
-                            let outputRows = ['Scheme Name|Month End|ISIN|Instrument Name|Market Value|Quantity'];
-                            let totalMarketValue = 0;
-                            let totalQuantity = 0;
-                            let validRecordCount = 0;
-
-                            // Get scheme name and month end date
-                            const schemeName = document.getElementById('schemeNameInput').value.toUpperCase();
-                            const monthEndDate = document.getElementById('monthEndInput').value;
-                            const formattedDate = monthEndDate ? new Date(monthEndDate).toLocaleDateString('en-IN', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                            }).replace(/\//g, '-') : '';
-
-                            // Process rows starting from dataStartRow
-                            const startRow = analysis.dataStartRow - 1; // Convert to 0-based index
-                            const endRow = jsonData.length; // Process all rows
-
-                            logToConsole(`Processing rows from ${startRow} to ${endRow}`);
-
-                            for (let i = startRow; i < endRow; i++) {
-                                const row = jsonData[i];
-                                if (!row) {
-                                    logToConsole(`Skipping empty row at index ${i}`);
-                                    continue;
-                                }
-
-                                // Check if ISIN is populated and starts with 'IN'
-                                const isin = row[columnIndices.isin];
-                                logToConsole(`Row ${i} - ISIN: ${isin}, Column Index: ${columnIndices.isin}`);
-
-                                if (isin && typeof isin === 'string' && isin.startsWith('IN')) {
-                                    validRecordCount++;
-                                    const marketValue = row[columnIndices.marketValue] || 0;
-                                    const quantity = row[columnIndices.quantity] || 0;
-
-                                    logToConsole(`Found valid row ${i} - ISIN: ${isin}, Market Value: ${marketValue}, Quantity: ${quantity}`);
-
-                                    // Convert market value to number
-                                    const marketValueNum = typeof marketValue === 'string' ?
-                                        parseFloat(marketValue.replace(/[^\d.-]/g, '')) :
-                                        (typeof marketValue === 'number' ? marketValue : 0);
-
-                                    // Convert quantity to number
-                                    const quantityNum = typeof quantity === 'string' ?
-                                        parseFloat(quantity.replace(/[^\d.-]/g, '')) :
-                                        (typeof quantity === 'number' ? quantity : 0);
-
-                                    if (!isNaN(marketValueNum)) {
-                                        totalMarketValue += marketValueNum;
-                                    }
-
-                                    if (!isNaN(quantityNum)) {
-                                        totalQuantity += quantityNum;
-                                    }
-
-                                    const outputRow = [
-                                        schemeName,
-                                        formattedDate,
-                                        isin,
-                                        row[columnIndices.instrumentName] || '',
-                                        marketValue || '',
-                                        quantity || ''
-                                    ].join('|');
-                                    outputRows.push(outputRow);
-                                }
-                            }
-
-                            logToConsole(`Found ${validRecordCount} valid records`);
-                            logToConsole(`Total Market Value: ${totalMarketValue}`);
-
-                            // Create the file content
-                            const fileContent = outputRows.join('\n');
-
-                            // Update displays
-                            const totalValueDisplay = document.getElementById('totalValueDisplay');
-                            const formattedTotal = totalMarketValue.toLocaleString('en-IN', {
-                                maximumFractionDigits: 2,
-                                minimumFractionDigits: 2
-                            });
-                            totalValueDisplay.textContent = formattedTotal;
-
-                            const recordCountDisplay = document.getElementById('recordCountDisplay');
-                            recordCountDisplay.textContent = validRecordCount.toLocaleString('en-IN');
-
-                            const totalQuantityDisplay = document.getElementById('totalQuantityDisplay');
-                            if (totalQuantityDisplay) {
-                                totalQuantityDisplay.textContent = totalQuantity.toLocaleString('en-IN');
-                            }
-
-                            // Calculate difference with OpenAI value
-                            const openAIValueDisplay = document.getElementById('openAITotalValueDisplay');
-                            if (openAIValueDisplay) {
-                                const openAIText = openAIValueDisplay.textContent.replace('₹', '').trim();
-                                const openAIValue = parseFloat(openAIText.replace(/,/g, ''));
-
-                                if (!isNaN(openAIValue)) {
-                                    const difference = openAIValue - totalMarketValue;
-                                    const formattedDiff = difference.toLocaleString('en-IN', {
-                                        maximumFractionDigits: 2,
-                                        minimumFractionDigits: 2
-                                    });
-                                    const diffAmtDisplay = document.getElementById('diffAmtDisplay');
-                                    if (diffAmtDisplay) {
-                                        diffAmtDisplay.textContent = formattedDiff;
-                                        logToConsole(`Calculated difference: ${openAIValue} - ${totalMarketValue} = ${difference}`);
-
-                                        // Create modified version of the file with the difference
-                                        const modifiedRows = [...outputRows];
-                                        const diffRow = [
-                                            schemeName,
-                                            formattedDate,
-                                            'IN9999999999',
-                                            '',
-                                            difference,
-                                            ''
-                                        ].join('|');
-                                        modifiedRows.push(diffRow);
-                                        const modifiedContent = modifiedRows.join('\n');
-
-                                        // Create modified file download button
-                                        const modFileName = `${file.name.replace(/\.[^/.]+$/, '')}_${actualSheetName}_mod.txt`;
-                                        createModifiedDownloadButton(modFileName, modifiedContent);
-                                    }
-                                }
-                            }
-
-                            // Create download button
-                            const fileName = `${file.name.replace(/\.[^/.]+$/, '')}_${actualSheetName}.txt`;
-                            createDownloadButton(fileName, fileContent);
-
-                            // Display data in the table
-                            displayInTable(outputRows);
-
-                            resolve();
-                        } catch (error) {
-                            logToConsole(`Error processing file: ${error.message}`, true);
-                            reject(error);
-                        }
-                    };
-
-                    reader.onerror = function () {
-                        const error = new Error('Error reading file');
-                        logToConsole(error.message, true);
-                        reject(error);
-                    };
-
-                    reader.readAsArrayBuffer(file);
-                } catch (error) {
-                    logToConsole(`Error processing file: ${error.message}`, true);
-                    reject(error);
-                }
-            });
-        }
+        
 
         function extractInitialRows(file, sheetName, numRows = 15) {
             return new Promise((resolve, reject) => {
@@ -1212,534 +1235,100 @@
             });
         }
 
-        async function analyzeWithGemini(prompt) {
-            try {
-                const promptWithFormat = `${prompt}
-
-                Please analyze and respond with ONLY a JSON object in this exact format:
-                {
-                    "dataStartRow": number,
-                    "columns": {
-                        "isin": string,
-                        "instrumentName": string,
-                        "marketValue": string,
-                        "quantity": string
-                    }
-                }
-
-                Do not include any additional text, markdown formatting, or explanations.`;
-
-                const response = await fetch(`${CONFIG.RT_ENDPOINT}/gemini-chat-completion`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: CONFIG.GEMINI_MODEL_STRUCTURE,
-                        contents: [
-                            {
-                                role: "user",
-                                parts: [
-                                    {
-                                        text: promptWithFormat
-                                    }
-                                ]
-                            }
-                        ],
-                        generationConfig: {
-                            temperature: 0,
-                            responseMimeType: "application/json"
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    logToConsole(`Gemini API Error Response: ${errorText}`, true);
-                    throw new Error(`Gemini API call failed: ${response.statusText}. Details: ${errorText}`);
-                }
-
-                const result = await response.json();
-                if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
-                    logToConsole(`Invalid Gemini API Response Structure: ${JSON.stringify(result)}`, true);
-                    throw new Error('Invalid Gemini API response format');
-                }
-
-                const content = result.candidates[0].content.parts[0].text;
-                logToConsole('Gemini Response:', content);
-
-                // Parse and display the Gemini structure response
-                try {
-                    const parsedGeminiContent = JSON.parse(content);
-                    const geminiSchemaDisplay = document.getElementById('geminiSchemaDisplay');
-                    if (geminiSchemaDisplay) {
-                        const rowNum = parsedGeminiContent.dataStartRow;
-                        const cols = parsedGeminiContent.columns;
-                        const displayValue = `${rowNum}-${cols.isin}-${cols.instrumentName}-${cols.marketValue}-${cols.quantity}`;
-                        geminiSchemaDisplay.textContent = displayValue;
-                        
-                        // Compare schemas after both are populated
-                        const openaiDisplay = document.getElementById('schemaAnalysisDisplay');
-                        if (openaiDisplay && openaiDisplay.textContent !== 'Waiting...') {
-                            compareAndHighlightSchemas(openaiDisplay.textContent, displayValue);
-                        }
-                    }
-                } catch (e) {
-                    logToConsole(`Failed to parse Gemini content: ${content}`, true);
-                }
-
-                return content;
-            } catch (error) {
-                logToConsole(`Gemini API Error: ${error.message}`, true);
-                throw error;
-            }
-        }
-
-        async function analyzeWithAI(initialRows, file, sheetName) {
-            try {
-                // Read the complete file for total value analysis
-                logToConsole('Reading complete file data...');
-                const completeData = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-
-                            // Convert input sheet name to lowercase
-                            const inputSheetNameLower = sheetName.toLowerCase();
-
-                            // Find the sheet name in a case-insensitive way
-                            const actualSheetName = Object.keys(workbook.Sheets).find(
-                                name => name.toLowerCase() === inputSheetNameLower
-                            );
-
-                            if (!actualSheetName) {
-                                throw new Error(`Sheet "${sheetName}" not found in workbook`);
-                            }
-
-                            const sheet = workbook.Sheets[actualSheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                            logToConsole(`Complete data rows: ${jsonData.length}`);
-
-                            if (jsonData.length === 0) {
-                                throw new Error('No data found in sheet');
-                            }
-
-                            resolve(jsonData);
-                        } catch (error) {
-                            logToConsole(`Error reading complete data: ${error.message}`, true);
-                            reject(error);
-                        }
-                    };
-                    reader.onerror = (error) => {
-                        logToConsole(`Error reading file: ${error}`, true);
-                        reject(new Error('Error reading file'));
-                    };
-                    reader.readAsArrayBuffer(file);
-                });
-
-                // Prepare prompts
-                const prompt = `
-                I'm analyzing a mutual fund portfolio allocation disclosure file from India. 
-                This is a monthly portfolio disclosure file that mutual funds in India must publish.
-                
-                I need to identify:
-                1. The row number where actual data starts (excluding headers). So when I import the data that row would be the first row to be imported. The first data row would always be the first row where the ISIN number and the instrument / security name / stock name  is non-empty. ISIN is the unique identifier for a insturment/ security / stock and always starts with 'IN"'.The first data row is the first row where both the ISIN column contains a value starting with 'IN' and the Instrument Name column is non-empty
-                2. The column indices (using letters A, B, C, etc.) for:
-                   - ISIN (could be labeled as "ISIN", "ISIN number", etc.)
-                   - Instrument Name (could be "Name of company", "Name of instrument", "Instrument", etc.)
-                   - Market Value (could be "Market value", "Fair value", "NAV", "FV", etc.)
-                   - Quantity (could be labeled as "Quantity", "Qty", "Nos", "#", "Units", "No. of Units", etc.)
-                
-                This information will be used to extract these specific columns and convert them into a pipe-delimited format.
-                Please provide the column letters (A, B, C, etc.) where these fields are located.
-                
-                Here are the first ${initialRows.length} rows of the file:
-                ${JSON.stringify(initialRows, null, 2)}
-                
-                Please analyze and respond with ONLY a JSON object in this format:
-                {
-                    "dataStartRow": number,
-                    "columns": {
-                        "isin": "column letter (A, B, C, etc.)",
-                        "instrumentName": "column letter (A, B, C, etc.)",
-                        "marketValue": "column letter (A, B, C, etc.)"
-                    }
-                }`;
-
-                logToConsole(`Preparing total value analysis for ${completeData.length} rows...`);
-                const totalValuePrompt = `
-                I'm analyzing a mutual fund portfolio disclosure file from India. This file contains market values or NAV (Net Asset Value) for various holdings.
-                
-                I need to find the TOTAL market value or NAV. This total might be labeled as:
-                - Grand Total
-                - Grand Total Market Value
-                - Net Assets
-                - Net Asset Value
-                - Total NAV
-                
-                Important Context:
-                1. This total is typically found in the same column as other market values/NAV values (column G)
-                2. It's usually towards the end of the data, but might be followed by additional schedules
-                3. The total row might contain other metrics, but we only want the market value/NAV total
-                4. The value should be in the same column as other market values
-                
-                Here is the complete file data (${completeData.length} rows):
-                ${JSON.stringify(completeData, null, 2)}
-                
-                Please analyze and respond with ONLY a JSON object containing the total value:
-                {
-                    "totalValue": number
-                }`;
-
-                logToConsole('Making API calls...');
-
-                // Make API calls with better error handling
-                const apiCalls = [
-                    // OpenAI API call for structure
-                    (async () => {
-                        const requestBody = {
-                            model: CONFIG.OPENAI_MODEL_STRUCTURE,
-                            messages: [
-                                {
-                                    role: "system",
-                                    content: "You are a helpful assistant that analyzes Excel file structures. You identify column positions using letters (A, B, C, etc.) and respond only with JSON."
-                                },
-                                {
-                                    role: "user",
-                                    content: prompt
-                                }
-                            ],
-                            response_format: { "type": "json_object" },
-                            temperature: 0
-                        };
-                        logToConsole('\n=== OpenAI Structure Analysis Request ===');
-                        logToConsole('URL:', `${CONFIG.RT_ENDPOINT}/open-chat-completion`);
-                        logToConsole('Request Body:');
-                        logToConsole(JSON.stringify(requestBody, null, 2));
-
-                        try {
-                            const response = await fetch(`${CONFIG.RT_ENDPOINT}/open-chat-completion`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify(requestBody)
-                            }).catch(error => {
-                                logToConsole(`Network error during fetch: ${error.message}`, true);
-                                throw new Error(`Network error: ${error.message}`);
-                            });
-
-                            logToConsole('Response Details:', {
-                                status: response.status,
-                                statusText: response.statusText,
-                                headers: Object.fromEntries(response.headers.entries()),
-                                url: response.url
-                            });
-
-                            if (!response.ok) {
-                                const errorText = await response.text();
-                                logToConsole('Error Response Body:', errorText);
-                                throw new Error(`OpenAI API call failed: ${response.statusText}. Details: ${errorText}`);
-                            }
-                            return response;
-                        } catch (error) {
-                            logToConsole(`OpenAI Structure API Error: ${error.message}`, true);
-                            throw error;
-                        }
-                    })(),
-
-                    // Gemini API call for structure
-                    analyzeWithGemini(prompt).catch(error => {
-                        logToConsole(`Gemini API call failed: ${error.message}`, true);
-                        logToConsole('Full Gemini error:', error);
-                        throw error;
-                    }),
-
-                    // OpenAI API call for total value
-                    (async () => {
-                        const requestBody = {
-                            model: CONFIG.OPENAI_MODEL_MARKET_VALUE,
-                            messages: [
-                                {
-                                    role: "system",
-                                    content: "You are a helpful assistant that analyzes mutual fund data. You identify total market values and respond only with JSON containing a single number."
-                                },
-                                {
-                                    role: "user",
-                                    content: totalValuePrompt
-                                }
-                            ],
-                            response_format: { "type": "json_object" },
-                            temperature: 0
-                        };
-                        logToConsole('\n=== Total Value Analysis Request ===');
-                        logToConsole('URL:', `${CONFIG.RT_ENDPOINT}/open-chat-completion`);
-                        logToConsole('Request Body:');
-                        logToConsole(JSON.stringify(requestBody, null, 2));
-
-                        try {
-                            logToConsole('Sending total value request...');
-                            const response = await fetch(`${CONFIG.RT_ENDPOINT}/open-chat-completion`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify(requestBody)
-                            }).catch(error => {
-                                logToConsole(`Network error during fetch: ${error.message}`, true);
-                                throw new Error(`Network error: ${error.message}`);
-                            });
-
-                            logToConsole('Total Value Response Details:');
-                            logToConsole(JSON.stringify({
-                                status: response.status,
-                                statusText: response.statusText,
-                                headers: Object.fromEntries(response.headers.entries()),
-                                url: response.url
-                            }, null, 2));
-
-                            // Read the response text once
-                            const responseText = await response.text().catch(error => {
-                                logToConsole(`Error reading response text: ${error.message}`, true);
-                                throw error;
-                            });
-                            logToConsole('Total Value Raw Response Text:', responseText);
-
-                            if (!response.ok) {
-                                throw new Error(`Total Value API call failed: ${response.statusText}. Details: ${responseText}`);
-                            }
-
-                            // Parse the stored response text
-                            try {
-                                const responseJson = JSON.parse(responseText);
-                                logToConsole('Total Value Parsed Response:', JSON.stringify(responseJson, null, 2));
-                                // Create a new response with the parsed data
-                                return new Response(responseText, {
-                                    status: response.status,
-                                    statusText: response.statusText,
-                                    headers: response.headers
-                                });
-                            } catch (e) {
-                                logToConsole('Error parsing total value response as JSON:', e.message);
-                                throw new Error(`Invalid JSON response: ${responseText}`);
-                            }
-                        } catch (error) {
-                            logToConsole('Total Value API Error:', error.message);
-                            logToConsole('Error stack:', error.stack);
-                            throw error;
-                        }
-                    })(),
-
-                    // Gemini API call for total value
-                    (async () => {
-                        logToConsole('\n=== Gemini Total Value Analysis Request ===');
-                        try {
-                            const response = await fetch(`${CONFIG.RT_ENDPOINT}/gemini-chat-completion`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    model: CONFIG.GEMINI_MODEL_MARKET_VALUE,
-                                    contents: [
-                                        {
-                                            role: "user",
-                                            parts: [
-                                                {
-                                                    text: totalValuePrompt
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    generationConfig: {
-                                        temperature: 0,
-                                        responseMimeType: "application/json"
-                                    }
-                                })
-                            });
-
-                            if (!response.ok) {
-                                const errorText = await response.text();
-                                logToConsole(`Gemini Total Value API Error Response: ${errorText}`, true);
-                                throw new Error(`Gemini Total Value API call failed: ${response.statusText}. Details: ${errorText}`);
-                            }
-
-                            const result = await response.json();
-                            if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
-                                logToConsole(`Invalid Gemini Total Value API Response Structure: ${JSON.stringify(result)}`, true);
-                                throw new Error('Invalid Gemini Total Value API response format');
-                            }
-
-                            const geminiTotalValueContent = result.candidates[0].content.parts[0].text;
-                            logToConsole('Gemini Total Value Response:', geminiTotalValueContent);
-
-                            try {
-                                const geminiTotalValueJson = JSON.parse(geminiTotalValueContent);
-                                const geminiValue = parseFloat(geminiTotalValueJson.totalValue);
-                                const formattedGeminiTotal = geminiValue.toLocaleString('en-IN', {
-                                    maximumFractionDigits: 2,
-                                    minimumFractionDigits: 2
-                                });
-
-                                // Update the Gemini total value in the stats table
-                                const statsTable = document.querySelector('.stats-table');
-                                if (statsTable) {
-                                    const geminiTotalValueDisplay = document.getElementById('geminiTotalValueDisplay');
-                                    if (geminiTotalValueDisplay) {
-                                        geminiTotalValueDisplay.textContent = formattedGeminiTotal;
-                                    }
-                                }
-                            } catch (e) {
-                                logToConsole('Error parsing Gemini total value JSON:', e.message);
-                                throw new Error(`Invalid Gemini total value JSON response: ${geminiTotalValueContent}`);
-                            }
-
-                            return new Response(geminiTotalValueContent, {
-                                status: response.status,
-                                statusText: response.statusText,
-                                headers: response.headers
-                            });
-                        } catch (error) {
-                            logToConsole(`Gemini Total Value API Error: ${error.message}`, true);
-                            throw error;
-                        }
-                    })()
-                ];
-
-                // Execute all API calls
-                const [openAIResponse, geminiResponse, totalValueResponse] = await Promise.all(apiCalls);
-
-                // Process responses with detailed logging
-                if (!openAIResponse.ok) {
-                    const errorText = await openAIResponse.text();
-                    logToConsole(`OpenAI API Error Response: ${errorText}`, true);
-                    throw new Error(`OpenAI API call failed: ${openAIResponse.statusText}. Details: ${errorText}`);
-                }
-
-                const openAIResult = await openAIResponse.json();
-                if (!openAIResult.choices || !openAIResult.choices[0] || !openAIResult.choices[0].message) {
-                    logToConsole(`Invalid OpenAI API Response Structure: ${JSON.stringify(openAIResult)}`, true);
-                    throw new Error('Invalid OpenAI API response format');
-                }
-
-                const openAIContent = openAIResult.choices[0].message.content;
-
-                // Process total value response
-                const totalValueResult = await totalValueResponse.json();
-                logToConsole('\n=== Total Market Value API Debug ===');
-                logToConsole('Response Status:', totalValueResponse.status);
-                logToConsole('Response Headers:', JSON.stringify(Object.fromEntries(totalValueResponse.headers.entries())));
-                logToConsole('Raw Response:', JSON.stringify(totalValueResult, null, 2));
-
-                if (totalValueResult && totalValueResult.choices && totalValueResult.choices[0] && totalValueResult.choices[0].message) {
-                    const totalValueContent = totalValueResult.choices[0].message.content;
-                    try {
-                        const totalValueJson = JSON.parse(totalValueContent);
-                        const formattedTotal = totalValueJson.totalValue.toLocaleString('en-IN', {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                        });
-
-                        const openAIValueDisplay = document.getElementById('openAITotalValueDisplay');
-                        if (openAIValueDisplay) {
-                            openAIValueDisplay.textContent = formattedTotal;
-                            
-                            // Compare with Gemini value if available
-                            const geminiValueDisplay = document.getElementById('geminiTotalValueDisplay');
-                            if (geminiValueDisplay && geminiValueDisplay.textContent !== 'Waiting...') {
-                                compareAndHighlightTNAV(formattedTotal, geminiValueDisplay.textContent);
-                            }
-                        }
-                    } catch (e) {
-                        logToConsole('Error parsing OpenAI total value JSON:', e.message);
-                    }
-                } else {
-                    logToConsole('Invalid or unexpected total value response structure');
-                    logToConsole('Response keys:', Object.keys(totalValueResult || {}));
-                    if (totalValueResult && totalValueResult.error) {
-                        logToConsole('Error details:', totalValueResult.error);
-                    }
-
-                    // Update display with error
-                    const openAIValueDisplay = document.getElementById('openAITotalValueDisplay');
-                    if (openAIValueDisplay) {
-                        openAIValueDisplay.textContent = 'Error analyzing';
-                    }
-                }
-
-                // Log all responses for comparison
-                logToConsole('=== API Response Comparison ===');
-                logToConsole('OpenAI Response:');
-                logToConsole(openAIContent);
-                logToConsole('\nGemini Response:');
-                logToConsole(geminiResponse);
-                logToConsole('=== End Comparison ===\n');
-
-                try {
-                    // Clean up the OpenAI content and return it for processing
-                    const cleanContent = openAIContent.replace(/```json\n|\n```|```/g, '').trim();
-                    const parsedContent = JSON.parse(cleanContent);
-
-                    // Update the schema analysis display with the structure information
-                    const schemaDisplay = document.getElementById('schemaAnalysisDisplay');
-                    if (schemaDisplay) {
-                        const rowNum = parsedContent.dataStartRow;
-                        const cols = parsedContent.columns;
-                        const displayValue = `${rowNum}-${cols.isin}-${cols.instrumentName}-${cols.marketValue}-${cols.quantity}`;
-                        schemaDisplay.textContent = displayValue;
-                        
-                        // Compare schemas after both are populated
-                        const geminiSchemaDisplay = document.getElementById('geminiSchemaDisplay');
-                        if (geminiSchemaDisplay && geminiSchemaDisplay.textContent !== 'Waiting...') {
-                            compareAndHighlightSchemas(displayValue, geminiSchemaDisplay.textContent);
-                        }
-                    }
-
-                    return parsedContent;
-                } catch (e) {
-                    logToConsole(`Failed to parse OpenAI content: ${openAIContent}`, true);
-                    throw new Error('Failed to parse OpenAI response as JSON');
-                }
-            } catch (error) {
-                logToConsole(`API Error: ${error.message}`, true);
-                throw error;
-            }
-        }
+           
 
         function createDownloadButton(fileName, content) {
-            // We don't need this function anymore since the button is hidden
-            // Just log for debugging
-            logToConsole('Original file created successfully');
+            // Just store the initial content without setting up the button
+            logToConsole('Initial file created, storing content...');
+            window._initialFileContent = content;
+            window._initialFileName = fileName;
         }
 
         function createModifiedDownloadButton(fileName, content) {
+            logToConsole('Setting up download button with modified file...');
             const downloadBtn = document.getElementById('downloadButton2');
             if (downloadBtn) {
+                logToConsole('Found download button, enabling it for modified file...');
+                
+                // Store the modified content and filename
+                window._modifiedFileContent = content;
+                window._modifiedFileName = fileName;
+                
+                // Update button state
                 downloadBtn.disabled = false;
-                downloadBtn.style.backgroundColor = '#16a34a';  // Set green background when enabled
-
+                downloadBtn.style.backgroundColor = '#16a34a';
+                downloadBtn.style.cursor = 'pointer';
+                downloadBtn.classList.remove('disabled');
+                downloadBtn.removeAttribute('disabled');
+                
                 // Update the click handler
-                downloadBtn.onclick = () => {
-                    const blob = new Blob([content], { type: 'text/plain' });
+                downloadBtn.onclick = function() {
+                    logToConsole('Download button clicked, creating modified file...');
+                    const blob = new Blob([window._modifiedFileContent], { type: 'text/plain' });
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = fileName;
+                    a.download = window._modifiedFileName;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
+                    logToConsole(`Downloading modified file: ${window._modifiedFileName}`);
                 };
+                
+                // Force the click handler to be non-null
+                if (!downloadBtn.onclick) {
+                    logToConsole('WARNING: Click handler not set properly, retrying...', true);
+                    setTimeout(() => {
+                        downloadBtn.onclick = function() {
+                            logToConsole('Backup click handler triggered...');
+                            const blob = new Blob([window._modifiedFileContent], { type: 'text/plain' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = window._modifiedFileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            logToConsole(`Downloading modified file (backup): ${window._modifiedFileName}`);
+                        };
+                    }, 100);
+                }
+                
+                // Log button state and file info
+                logToConsole(`Download button configured for modified file:
+                    disabled: ${downloadBtn.disabled}
+                    hasClickHandler: ${typeof downloadBtn.onclick === 'function'}
+                    fileName: ${window._modifiedFileName}
+                    initialFileName: ${window._initialFileName}
+                    clickHandlerSet: ${!!downloadBtn.onclick}
+                `);
+            } else {
+                logToConsole('ERROR: Download button not found in DOM!', true);
+            }
+        }
+
+        // Update checkDownloadButtonState to include click handler check
+        function checkDownloadButtonState() {
+            const downloadBtn = document.getElementById('downloadButton2');
+            if (downloadBtn) {
+                logToConsole(`Current download button state:
+                    disabled: ${downloadBtn.disabled}
+                    backgroundColor: ${downloadBtn.style.backgroundColor}
+                    classList: ${downloadBtn.classList}
+                    hasAttribute('disabled'): ${downloadBtn.hasAttribute('disabled')}
+                    computedStyle.backgroundColor: ${window.getComputedStyle(downloadBtn).backgroundColor}
+                    hasClickHandler: ${typeof downloadBtn.onclick === 'function'}
+                `);
             }
         }
 
         function displayInTable(rows) {
             const outputContainer = document.getElementById('outputContainer');
+            const delimiter = document.getElementById('delimiterInput').value;
+            // Convert the string "\t" to an actual tab character if tab is selected
+            const actualDelimiter = delimiter === '\\t' ? '\t' : delimiter;
 
             // Create table
             const table = document.createElement('table');
@@ -1748,7 +1337,7 @@
             // Create header
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
-            const headers = rows[0].split('|');
+            const headers = rows[0].split(actualDelimiter);
 
             headers.forEach(header => {
                 const th = document.createElement('th');
@@ -1763,7 +1352,7 @@
             const tbody = document.createElement('tbody');
             for (let i = 1; i < rows.length; i++) {
                 const row = document.createElement('tr');
-                const cells = rows[i].split('|');
+                const cells = rows[i].split(actualDelimiter);
 
                 cells.forEach((cell, index) => {
                     const td = document.createElement('td');
@@ -2314,6 +1903,60 @@
                 document.body.style.overflow = 'auto';
             }
         });
+
+        // Models Modal Functionality
+        document.getElementById('placeholderBtn1').addEventListener('click', function() {
+            const modal = document.getElementById('modelsModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            // Set current values from CONFIG
+            document.getElementById('openaiStructure').value = CONFIG.OPENAI_MODEL_STRUCTURE;
+            document.getElementById('openaiMarketValue').value = CONFIG.OPENAI_MODEL_MARKET_VALUE;
+            document.getElementById('openrouterStructure').value = CONFIG.OPENROUTER_MODEL_STRUCTURE;
+            document.getElementById('openrouterMarketValue').value = CONFIG.OPENROUTER_MODEL_MARKET_VALUE;
+        });
+
+        // Close models modal when clicking cancel
+        document.getElementById('cancelModels').addEventListener('click', function() {
+            document.getElementById('modelsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        // Close models modal when clicking outside
+        document.getElementById('modelsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Handle models form submission
+        document.getElementById('modelsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Update CONFIG object with new values
+            CONFIG.OPENAI_MODEL_STRUCTURE = document.getElementById('openaiStructure').value;
+            CONFIG.OPENAI_MODEL_MARKET_VALUE = document.getElementById('openaiMarketValue').value;
+            CONFIG.OPENROUTER_MODEL_STRUCTURE = document.getElementById('openrouterStructure').value;
+            CONFIG.OPENROUTER_MODEL_MARKET_VALUE = document.getElementById('openrouterMarketValue').value;
+
+            // Update model labels in the stats table
+            document.getElementById('schemaModelLabel').textContent = `Schema-Main/${CONFIG.OPENAI_MODEL_STRUCTURE}`;
+            document.getElementById('geminiSchemaLabel').textContent = `Schema-Validn./${CONFIG.OPENROUTER_MODEL_STRUCTURE}`;
+            document.getElementById('geminiModelLabel').textContent = `T-MV-Validn /${CONFIG.OPENROUTER_MODEL_MARKET_VALUE}`;
+
+            // Log the changes
+            logToConsole('\n=== Model Configuration Updated ===');
+            logToConsole('OpenAI Structure:', CONFIG.OPENAI_MODEL_STRUCTURE);
+            logToConsole('OpenAI Market Value:', CONFIG.OPENAI_MODEL_MARKET_VALUE);
+            logToConsole('OpenRouter Structure:', CONFIG.OPENROUTER_MODEL_STRUCTURE);
+            logToConsole('OpenRouter Market Value:', CONFIG.OPENROUTER_MODEL_MARKET_VALUE);
+
+            // Close the modal
+            document.getElementById('modelsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
     </script>
     <script src="file_appender.js"></script>
     
@@ -2323,6 +1966,21 @@
         <a href="https://rex.tigzig.com" target="_blank" rel="noopener noreferrer">rex.tigzig.com</a> <span>•</span>
         <a href="https://tigzig.com" target="_blank" rel="noopener noreferrer">tigzig.com</a>
     </footer>
+    <!-- Statcounter Code -->
+    <script type="text/javascript">
+        var sc_project = 13047808;
+        var sc_invisible = 1;
+        var sc_security = "b480b311";
+    </script>
+    <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+    <noscript>
+        <div class="statcounter">
+            <a title="web stats" href="https://statcounter.com/" target="_blank">
+                <img class="statcounter" src="https://c.statcounter.com/13047808/0/b480b311/1/" alt="web stats" referrerPolicy="no-referrer-when-downgrade" />
+            </a>
+        </div>
+    </noscript>
+    <!-- End of Statcounter Code -->
 </body>
 
 </html>
